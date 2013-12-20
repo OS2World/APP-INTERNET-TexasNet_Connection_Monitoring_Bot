@@ -1,0 +1,45 @@
+WHAT THE HELL DID YOU JUST SEND ME D5????
+
+noclone.irc is a script that is made up of essentially three components.
+
+the first component is an alias called /tcmnick; which if you're running a
+tcm on your server, sets the nickname of your tcm bot, and uses it for
+future and immediate use. the immediate use is any time your tcm sends a
+string beginnging with "/quote kline.." it sets a variable which is
+aliased to /doit. /doit would then do "/quote kline.. etc." whatever
+userhost, reason and dates were as given by the tcm. the future use is...
+/cfp. connect flood protection.. for people who (as indicated by the
+previous use) are wary of putting the not-always infalliable tcm bot on
+autopilot. /cfp on will turn on CFP (duh) which sets an 'on dcc_chat'
+sensor that autokills any clones that your tcm reports to you as it
+notices them... the advantage of taking your bot off autopilot when you
+*are* around at LEAST is that if you *do* accidentally kill someone it's
+okay.. say a router reconnects suddenly, and three clients connect to your
+server and they trigger the tcm.. but they are actually individual users..
+this way you can gently apologize for killing them and let them be on
+their way.. if they continue to be a problem, and reconnect, sure.. /doit
+will kline them just as surely.. and if you're there, why not? :)
+
+the final component, and i think most useful for general purpose clone
+killing, is /servset. this configures your client to react to clone
+reports from services.us. essentially, it performs a /trace to find out
+who the current opers are, protects them from being killed (as many opers
+have multiple O:lines and sometimes have more than 4 or 5 connections - i
+think 5 is a good number, but i'd like to see it done with 4 :) then it
+sets up an 'else' sensor.. anything but opers that you get reported from
+services.us which appear on your server will be killed with a reason
+'clone -- services' i guess you could edit the script and search for that
+and replace it with whatever you like.. maybe throw a $Z (time) in there
+or something.. to make checking services easier, just type /clones
+<number> (default is 6, i usually use 5 just to be daring.. what user@host
+needs more than 5 connections) (yes i know.. user@*.commercial.provider -
+but many many people will argue "so what it's a local kill") i've gone
+along with that up until this point.. i *do* have plans to implement an
+"off" toggle to /servset. not today though. oh yeah.. there's also an on
+command in there that notices when people *become* opers.. so it will add
+them to the protection list as well...
+
+ok well have fun and if there's anything left out or anything it's only
+because i really haven't gotten any sleep, and i have been on a pretty
+regular sleep schedule lately.. haven't been keeping admin hours heheh...
+-wjr

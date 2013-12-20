@@ -1,0 +1,6459 @@
+head	1.32;
+access;
+symbols;
+locks
+	db:1.32; strict;
+comment	@ * @;
+
+
+1.32
+date	97.06.01.18.04.15;	author db;	state Exp;
+branches;
+next	1.31;
+
+1.31
+date	97.05.23.04.54.16;	author db;	state Exp;
+branches;
+next	1.30;
+
+1.30
+date	97.05.21.00.54.15;	author db;	state Exp;
+branches;
+next	1.29;
+
+1.29
+date	97.05.17.23.16.13;	author db;	state Exp;
+branches;
+next	1.28;
+
+1.28
+date	97.05.12.01.47.36;	author db;	state Exp;
+branches;
+next	1.27;
+
+1.27
+date	97.05.03.16.29.34;	author db;	state Exp;
+branches;
+next	1.26;
+
+1.26
+date	97.05.01.00.23.20;	author db;	state Exp;
+branches;
+next	1.25;
+
+1.25
+date	97.04.25.20.53.30;	author db;	state Exp;
+branches;
+next	1.24;
+
+1.24
+date	97.04.25.05.58.41;	author db;	state Exp;
+branches;
+next	1.23;
+
+1.23
+date	97.04.24.20.02.03;	author db;	state Exp;
+branches;
+next	1.22;
+
+1.22
+date	97.04.23.16.33.40;	author db;	state Exp;
+branches;
+next	1.21;
+
+1.21
+date	97.04.14.17.07.06;	author db;	state Exp;
+branches;
+next	1.20;
+
+1.20
+date	97.04.03.21.10.24;	author db;	state Exp;
+branches;
+next	1.19;
+
+1.19
+date	97.04.02.20.16.55;	author db;	state Exp;
+branches;
+next	1.18;
+
+1.18
+date	97.03.14.03.56.21;	author db;	state Exp;
+branches;
+next	1.17;
+
+1.17
+date	97.03.09.05.42.49;	author db;	state Exp;
+branches;
+next	1.16;
+
+1.16
+date	97.03.09.05.40.14;	author db;	state Exp;
+branches;
+next	1.15;
+
+1.15
+date	97.03.09.05.26.57;	author db;	state Exp;
+branches;
+next	1.14;
+
+1.14
+date	97.03.07.21.21.14;	author db;	state Exp;
+branches;
+next	1.13;
+
+1.13
+date	97.03.07.18.44.44;	author db;	state Exp;
+branches;
+next	1.12;
+
+1.12
+date	97.03.06.17.57.22;	author db;	state Exp;
+branches;
+next	1.11;
+
+1.11
+date	97.03.06.17.38.16;	author db;	state Exp;
+branches;
+next	1.10;
+
+1.10
+date	97.01.05.04.28.44;	author db;	state Exp;
+branches;
+next	1.9;
+
+1.9
+date	97.01.01.01.42.31;	author db;	state Exp;
+branches;
+next	1.8;
+
+1.8
+date	96.12.18.02.51.52;	author db;	state Exp;
+branches;
+next	1.7;
+
+1.7
+date	96.12.18.01.54.36;	author db;	state Exp;
+branches;
+next	1.6;
+
+1.6
+date	96.12.16.01.26.55;	author db;	state Exp;
+branches;
+next	1.5;
+
+1.5
+date	96.12.15.22.21.04;	author db;	state Exp;
+branches;
+next	1.4;
+
+1.4
+date	96.12.15.20.55.29;	author db;	state Exp;
+branches;
+next	1.3;
+
+1.3
+date	96.12.14.22.48.59;	author db;	state Exp;
+branches;
+next	1.2;
+
+1.2
+date	96.12.09.01.13.53;	author db;	state Exp;
+branches;
+next	1.1;
+
+1.1
+date	96.12.09.00.46.51;	author db;	state Exp;
+branches;
+next	;
+
+
+desc
+@use strtoul() for SOLARIS in DCC CHAT kludge
+@
+
+
+1.32
+log
+@v0.4.2 release
+@
+text
+@/***********************************************************
+* MrsBot (used in tcm) by Hendrix <jimi@@texas.net>          *
+*                                                           *
+*   Main program is here.                                   *
+*   Code to log into server and parse server commands       *
+*    and call routine based on the type of message (public, *
+*    private, mode change, etc.)                            *
+*   Code to create and manage BabyBot here.                 *
+*   Based heavily on Adam Roach's bot skeleton.             *
+* Includes routines:                                        *
+*   int bindsocket                                          *
+*   void prnt                                               *
+*   char rdpt                                               *
+*   void signon                                             *
+*   void pong                                               *
+*   void linkclosed                                         *
+*   void makeconn                                           *
+*   void closeconn                                          *
+*   void proc                                               *
+*   void gracefuldie                                        *
+*   void privmsg					    *
+*   void onnick()					    *
+*   void onnicktaken()					    *
+*   void cannotjoin()					    *
+*   void ontraceuser()					    *
+*   void ontraceclass()					    *
+*   void reload_user_list - Dianora                         *
+*   void check_services   - Dianora			    *
+*   void on_services_notice - Dianora			    *
+*   void connect_remote_tcm - Dianora			    *
+*   void sendto_all_linkedbots - Dianora		    *
+*   int  add_connection - Dianora			    *
+*   int  already_have_tcm - Dianora			    *
+*   main                                                    *
+************************************************************/
+
+#include <stdio.h>
+#include <string.h>
+#include <signal.h>
+#include <sys/errno.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#include <sys/socket.h>
+
+#ifdef LINUX
+# include <sys/socketcall.h>
+#else
+# include <sys/socketvar.h>
+#endif
+
+#ifdef AIX
+# include <sys/select.h>
+#endif
+
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include "config.h"
+#include "tcm.h"
+
+/* Kludge for funky Linux FD set handlers from Splat */
+/* need time.h for logging anyway */
+
+#ifdef LINUX
+#include <sys/time.h>
+#else
+#include <time.h>
+#endif
+
+static char *version="$Id: serverif.c,v 1.31 1997/05/23 04:54:16 db Exp db $";
+
+extern int errno;          /* The Unix internal error number */
+extern int *timerc;
+
+extern AUTH_FILE_ENTRY userlist[];
+extern BOT_FILE_ENTRY botlist[];
+
+
+#ifdef AUTOPILOT
+extern int autopilot;
+#endif
+
+extern void list_nicks();		/* - Dianora bothunt.c */
+extern void init_nick_change_table();	/* - Dianora bothunt.c */
+extern void report_nick_flooders();	/* - Dianora bothunt.c */
+extern void initopers();		/* - Dianora bothunt.c */
+extern void on_stats_o();		/* - Dianora bothunt.c */
+extern void load_hostlist();		/* - Phisher userlist.c */
+extern void onservnotice();		/* - Hendrix bothunc.c */
+extern void print_help();		/* - Hendrix bothunt.c */
+
+/* All of this should be in one struct */
+/*
+  These should all be in a CONFIG struct - Dianora
+*/
+
+extern char username_config[];
+extern char virtual_host_config[];
+extern char server_config[];
+extern char server_name[];
+extern char server_port[];
+extern char ircname_config[];
+extern char email_config[];
+extern int  tcm_port;
+extern char mychannel[MAX_CHANNEL];
+
+int GettingCASVCSReports = 0;
+
+char ourhostname[MAX_HOST];   /* This is our hostname with domainname */
+char serverhost[MAX_HOST];    /* Server tcm will use. */
+char defchannel[MAX_CHANNEL]; /* Channel tcm will use. */
+char dfltnick[MAX_NICK];      /* Nickname tcm will use. */
+char mynick[MAX_NICK];        /* tcm's current nickname */
+
+/* kludge for ensuring no direct loops */
+int  incoming_connnum;	      /* current connection number incoming */
+/* KLUDGE  *grumble* */
+/* allow for ':' ' ' etc. */
+
+struct 
+{
+  char to_nick[MAX_NICK+1];
+  char to_tcm[MAX_NICK+1];
+  char from_nick[MAX_NICK+1];
+  char from_tcm[MAX_NICK+1];
+}route_entry;
+
+
+void send_to_nick(char *,char *); /* - Dianora */
+void prnt(int, char*);		/* - Hendrix */
+void pong(int,char *);		/* - Hendrix */
+void do_init(void);		/* - Hendrix */
+int bindsocket(char *);		/* - Hendrix */
+void toserv(char *);		/* - Hendrix */
+void sendtoalldcc(char *,int ); /* - Hendrix */
+void privmsg();
+void onkick();
+void onjoin();
+void onnick();
+void onnicktaken();
+void ontraceuser();
+void ontraceclass();
+void gracefuldie(int);		/* - Hendrix */
+void linkclosed(void);		/* - Hendrix */
+char makeconn(char *,char *,char *); /* - Hendrix */
+void serverproc();
+void closeconn(int);		/* - Hendrix */
+void dccproc(int);		/* - Hendrix, much modified now */
+void proc(char *,char *,char *); /* - Hendrix */
+void initlog();
+void log_kline(struct tm *,char *,char *,char *,char *); /* - Dianora */
+void reload_user_list(void);	/* - Dianora */
+void clear_userlist();		/* - Dianora */
+void check_services();		/* - Dianora */
+void on_services_notice(char *);	/* - Dianora */
+void on_ca_services_notice(char *);	/* - chris/Dianora */
+void connect_remote_tcm(int);		/* - Dianora */
+void init_remote_tcm_listen(void);	/* - Dianora */
+void init_allow_nick();		/* - Dianora */
+void setup_allow();		/* - Dianora */
+void sendto_all_linkedbots();	/* - Dianora */
+void do_a_kline(char *,char *,char *,char *);		/* - Dianora */
+int  add_connection(int,int);		/* - Dianora */
+int  test_ignore();		/* - Dianora */
+char *type_show();		/* - Dianora */
+int  already_have_tcm(char *);		/* - Dianora */
+
+int reconnects = 0;        /* Times we have reconnected to the server */
+int quit = NO;             /* When it is YES, we quit almost immediately */
+
+FILE *outfile;             /* Debug output file handle
+			      Now shared with writing pid file - Dianora */
+
+FILE *logging_fp;	   /* If logging clones etc. - Dianora */
+int remote_tcm_socket;	   /* listening socket */
+fd_set readfds,nullfds;    /* Two file descriptor sets for use with select */
+
+
+CONNECTION connections[MAXDCCCONNS+1];
+
+/*  OH BLAH this is ugleee */
+char source[80];
+char fctn[80];
+char body[512];
+int  maxconns = 0;
+
+
+/* For talking to services */
+SERVICES_ENTRY services;
+
+char allow_nick[MAX_ALLOW_SIZE][MAX_NICK+4];
+
+/*
+** bindsocket()
+**   Sets up a socket and connects to the given host and port
+*/
+int bindsocket(char *hostport)
+{
+  int plug;
+  struct sockaddr_in socketname;
+  struct sockaddr_in localaddr;
+  struct hostent *remote_host;
+  /* virtual host support - dianora */
+  struct hostent *local_host;
+  char buf [BUFSIZ];
+  char s [BUFSIZ];
+  int portnum = 6667;
+  char server[MAX_HOST],*hold;
+  int optval;
+
+  /* Parse serverhost to look for port number */
+  strcpy (server,hostport);
+
+  if ((hold = strchr(server,':')) != (char *)NULL)
+    {
+      *(hold++) = '\0';
+      portnum = atoi(hold);
+    }
+
+  /* open an inet socket */
+  if ((plug = socket (AF_INET, SOCK_STREAM, 0)) < 0)
+    {
+      printf ("error: can't assign fd for socket\n");
+      return (INVALID);
+    }
+
+  optval = 1;
+  /* Let us pray.... */
+  (void)setsockopt(plug,SOL_SOCKET,SO_REUSEADDR,(char *)&optval,
+		   sizeof(optval));
+  (void) bzero(&socketname, sizeof(socketname));
+
+  /* virtual host support - Dianora */
+  if(virtual_host_config[0] != '\0')
+    {
+      if ((local_host = gethostbyname (virtual_host_config))
+	  != (struct hostent *) NULL)
+	{
+	  printf("virtual host [%s]\n",virtual_host_config);
+	  printf("found official name [%s]\n",
+		 local_host->h_name);
+
+	  (void) bzero(&localaddr, sizeof(struct sockaddr_in));
+	  (void) bcopy ((char *) local_host->h_addr,
+			(char *) &localaddr.sin_addr,
+			local_host->h_length);
+	  localaddr.sin_family = AF_INET;
+	  localaddr.sin_port = 0;
+
+	  if(bind(plug,(struct sockaddr *)&localaddr,
+	       sizeof(socketname)) < 0)
+	    {
+	      perror("unable to bind virtual host");
+	    }
+	  else
+	    printf("bound to virtual host\n");
+	}
+    }
+
+  /* kludge for DCC CHAT precalculated sin_addrs */
+  if (*server == '#')
+    {
+#if defined(LINUX) || defined(FREEBSD) || defined(BSDI) || defined(SOLARIS) || defined(GNUWIN32) || defined(AIX) || defined(NEXT)
+    socketname.sin_addr.s_addr = htonl(strtoul(server+1,(char **)NULL,10));
+#else
+    socketname.sin_addr.s_addr = htonl(strtol(server+1,(char **)NULL,10));
+#endif
+    }
+  /* lookup host */
+  else
+    {
+      if ((remote_host = gethostbyname (server)) == (struct hostent *) NULL)
+	{
+	  printf ("error: unknown host: %s\n", server);
+	  return (INVALID);
+	}
+      (void) bcopy ((char *) remote_host->h_addr,
+		    (char *) &socketname.sin_addr,
+		    remote_host->h_length);
+    }
+  socketname.sin_family = AF_INET;
+  socketname.sin_port = htons (portnum);
+
+  /* connect socket */
+ while (connect (plug, (struct sockaddr *) &socketname, sizeof socketname) < 0)
+    if (errno != EINTR)
+      {
+	printf("Error: connect %i\n", errno);
+	return (INVALID);
+      }
+
+  return (plug);
+}
+
+/*
+** prnt()
+**   Like toserv() but takes a socket number as a parameter.  This
+**    makes it useful for use by both MrsBot and BabyBot.  Only
+**    called from this file though.
+*
+
+inputs		- socket to reply on if local
+output		- NONE
+side effects	- input socket is ignored if its message meant
+		  for user on another tcm, or its message
+		  meant for a specific user on this tcm.
+
+*/
+void prnt(int sock,char *msg)
+{
+  char dccbuff[DCCBUFF_SIZE];
+
+  if(route_entry.to_nick[0] != '\0')
+    {
+      printf("DEBUG: prnt route_entry non null\n");
+
+      (void)sprintf(dccbuff,":%s@@%s %s@@%s %s",
+		    route_entry.to_nick,
+		    route_entry.to_tcm,
+		    dfltnick,
+		    dfltnick,
+		    msg);
+
+      printf("DEBUG: msg = [%s]",dccbuff);
+      send(sock, dccbuff, strlen(dccbuff), 0);
+    }
+  else
+    {
+      send(sock, msg, strlen(msg), 0);
+      printf("DEBUG: msg =  [%s]",msg);
+    }
+#ifdef DEBUGMODE
+      (void)printf("%s",msg);	/* - zaph */
+      (void)fprintf(outfile,"%s",msg);
+#endif
+}
+
+/*
+send_to_nick
+
+inputs		- nick to send to
+		  buffer to send to nick
+output		- NONE
+side effects	- NONE
+*/
+
+void send_to_nick(char *to_nick,char *buffer)
+{
+  int i;
+  char dccbuff[DCCBUFF_SIZE];
+
+  strncpy(dccbuff,buffer,DCCBUFF_SIZE-2);
+  strcat(dccbuff,"\n");
+
+  for( i = 1; i < maxconns; i++ )
+    {
+      if(strcasecmp(to_nick,connections[i].nick) == 0)
+	{
+	  send(connections[i].socket, dccbuff, strlen(dccbuff), 0);
+	}
+    }
+}
+
+/*
+toserv
+
+inputs		- msg to send directly to server
+output		- NONE
+side effects	- server executes command.
+*/
+
+void toserv(char *msg)
+{
+  if (connections[0].socket != INVALID)
+    send(connections[0].socket, msg, strlen(msg), 0);
+}
+
+/*
+sendtoalldcc
+
+inputs		- message to send
+		- flag if message is to be sent only to all users or opers only
+output		- NONE
+side effects	- message is sent on /dcc link to all connected
+		  users or to only opers on /dcc links
+
+		  - Dianora
+
+  I was going to include a flag "BOTS_ONLY", to have this routine
+only send msg to linked bot, but I think its less clear doing it that way
+and less efficient...
+
+*/
+
+void sendtoalldcc(char *msg,int type)
+{
+  char buff[MAX_BUFF];
+  char bot_buff[MAX_BUFF];
+  int i;
+  int local_tcm = NO;	/* local tcm ? */
+
+  /* what a hack...
+     each tcm prefixes its messages sent to each user
+     with "<nick@@botnick>" unless its a clone report, link report
+     etc. This is fine, unless its being sent to a bot
+
+     if its an "o:" its gonna have a "o:<user@@botnick>" so it goes
+     straight through
+
+     if its a '.' command, it goes straight through
+     as '.' commands are not seen elsewhere, but are directly
+     dealt with. (i.e. glines)
+
+     if its another else and is missing the '<' it gets the bot nick
+     prepended.
+  */
+
+  /* If opers only message, it goes straight through */
+  if((msg[0] == 'o' || msg[0] == 'O')
+	 && msg[1] == ':')
+    {
+      (void)sprintf(bot_buff,"%s\n",msg);
+    }
+  else
+    {
+      /* command prefix, goes straight through */
+
+      if(msg[0] == '.')
+	(void)sprintf(bot_buff,"%s\n",msg);
+
+      /* Missing a leading '<', we prepend the botnick as <botnick> */
+      else if(msg[0] != '<')
+	{
+	  (void)sprintf(bot_buff,"<%s> %s\n",dfltnick,msg);
+	  local_tcm = YES;
+	}
+
+      /* anything else already has a leading "<" or "O:<" */
+      else
+	(void)sprintf(bot_buff,"%s\n",msg);
+    }
+  (void)sprintf(buff,"%s\n",msg);
+
+  for ( i = 1; i < maxconns; i++)
+    {
+#ifdef NO_LOCAL_ECHO
+      if( i != incoming_connnum )
+#else
+      if( ((connections[i].type & TYPE_BOT) && (i == incoming_connnum )) )
+	/* NULL STATEMENT do nothing here */
+	;
+      else
+#endif
+	{
+	  if (connections[i].socket != INVALID)
+	    {
+	      switch(type)
+		{
+		case SEND_OPERS_ONLY:
+		  if(connections[i].type & TYPE_BOT)
+		    prnt(connections[i].socket, bot_buff);
+		  else if(connections[i].type & TYPE_OPER)
+		    prnt(connections[i].socket, buff);
+		  break;
+
+		case SEND_ALL_USERS:
+		  if(connections[i].type & TYPE_BOT)
+		    prnt(connections[i].socket, bot_buff);
+		  else
+		    {
+		      if(local_tcm)
+			prnt(connections[i].socket, buff);
+		      else
+			{
+			  if(!(connections[i].type & TYPE_IGNORE))
+			    prnt(connections[i].socket, buff);
+			}
+		    }
+		  break;
+
+		default:
+		  break;
+		}
+	    }
+	}
+    }
+}
+
+/*
+** rdpt()
+**   Readincoming data off one of the sockets and process it
+*/
+void rdpt(void)
+{
+  int select_result;
+  int lnth, i;
+  char dccbuff[DCCBUFF_SIZE];
+  struct timeval server_time_out;
+
+  for(;;)
+    {
+      FD_ZERO (&readfds);
+      for (i=0; i<maxconns; ++i)
+	if (connections[i].socket != INVALID)
+	  FD_SET(connections[i].socket,&readfds);
+
+      FD_SET(remote_tcm_socket,&readfds);
+
+      server_time_out.tv_sec = SERVER_TIME_OUT;
+      server_time_out.tv_usec = 0L;
+
+      if( (select_result = select(FD_SETSIZE, &readfds, &nullfds, &nullfds,
+				  &server_time_out)) > 0)
+	{
+	  if( FD_ISSET(remote_tcm_socket, &readfds) )
+	    connect_remote_tcm(INVALID);
+
+	  for (i=0; i<maxconns; ++i)
+	    {
+	      if (connections[i].socket != INVALID)
+		{
+		  if( (connections[i].type & TYPE_PENDING) &&
+		      ((connections[i].last_message_time + TCM_REMOTE_TIMEOUT)
+		       < time((time_t *)NULL)) )
+		    {
+		      closeconn(i);
+		      continue;
+		    }
+
+		  if( FD_ISSET(connections[i].socket, &readfds))
+		    {
+		      incoming_connnum = i;
+
+		      lnth =recv(connections[i].socket,connections[i].buffend,
+				 1,0);
+
+		      if (lnth == 0)
+			{
+			  if (i == 0)
+			    linkclosed();
+			  else
+			    closeconn(i);
+			  return;
+			}
+		      if (*connections[i].buffend == '\n' ||
+			  *connections[i].buffend == '\r' ||
+			  connections[i].buffend - connections[i].buffer
+			  == BUFFERSIZE -1)
+			{
+			  *connections[i].buffend = '\0';
+			  connections[i].buffend = connections[i].buffer;
+			  if (*connections[i].buffer)
+			    if (i == 0)
+			      serverproc();
+			    else
+			      {
+				if( (connections[i].type & TYPE_BOT) &&
+				    (connections[i].type & TYPE_PENDING))
+				  connect_remote_tcm(i);
+				else
+				  dccproc(i);
+			      }
+			  return;
+			}
+		      else
+			++connections[i].buffend;
+		    }
+		}
+	    }
+	  check_services();
+	}
+      else
+	{
+	  if( select_result == 0)
+	    linkclosed();		/* PING time out of server */
+	}
+    }
+}
+
+/*
+check_services
+
+inputs		- NONE
+output		- NONE
+side effects	-
+*/
+
+void check_services(void)
+{
+  time_t cur_time;
+  char clone_msg[MAX_BUFF];
+
+  cur_time = time((time_t *)NULL);
+
+  if((services.last_checked_time + SERVICES_CHECK_TIME) < cur_time )
+     {
+       services.last_checked_time = cur_time;
+       route_entry.to_nick[0] = '\0';
+       route_entry.to_tcm[0] = '\0';
+       route_entry.from_nick[0] = '\0';
+       route_entry.from_tcm[0] = '\0';
+
+       (void)sprintf(clone_msg,"clones %d\n", SERVICES_CLONE_THRESHOLD );
+       msg(SERVICES_NICK,clone_msg);
+       /* check if services.ca just signed on */
+       toserv("ISON CA-SVCS\r\n");
+     }
+}
+
+/*
+on_services_notice
+
+inputs		- body from message sent to us from server
+output		- NONE
+side effects	- reports of global cloners
+*/
+
+void on_services_notice(char *body)
+{
+  char *parm1;
+  char *parm2;
+  char *parm3;
+  char dccbuff[DCCBUFF_SIZE];
+  char kbuffer[DCCBUFF_SIZE];
+  char userathost[MAX_HOST];
+  int  identd;
+
+  while(*body == ' ')
+    body++;
+
+  parm1 = strtok(body," ");
+  if(parm1 == (char *)NULL)
+    return;
+
+  parm2 = strtok((char *)NULL," ");
+  if(parm2 == (char *)NULL)
+    return;
+
+  parm3 = strtok((char *)NULL,"");
+  if(parm3 == (char *)NULL)
+    return;
+
+  if( strstr(parm3,"users") )
+    {
+      strncpy(services.cloning_host,parm1,MAX_HOST-1);
+      strncpy(services.user_count,parm3,SMALL_BUFF-1);
+      services.kline_suggested = NO;
+      return;
+    }
+
+  if((strcasecmp("on",parm2) == 0) && (strcasecmp(server_name,parm3) == 0))
+    {
+      (void)sprintf(dccbuff,"%s reports %s cloning %s nick %s",
+		    SERVICES_NAME,
+		    services.user_count,
+		    services.cloning_host,
+		    parm1);
+
+      msg(mychannel,dccbuff);
+      sendtoalldcc(dccbuff,SEND_ALL_USERS);
+
+      if(services.kline_suggested == NO)
+	{
+	  char *user;
+	  char *host;
+	  char user_host[MAX_HOST+1];
+
+	  strncpy(userathost,services.cloning_host,MAX_HOST);
+
+	  /* strtok is going to destroy the original userathost,
+	     so save a copy for our own uses */
+
+	  strncpy(user_host,userathost,MAX_HOST);
+
+	  user = strtok(userathost,"@@");	
+	  if(user == (char *)NULL)
+	    return;
+
+	  identd = YES;
+	  if(*user == '~')
+	    identd = NO;
+
+	  host = strtok((char *)NULL,"");
+	  if(host == (char *)NULL)
+	    return;
+
+
+#ifdef AUTOKSERVICES	   /* If doing AUTO anything on any services */
+#ifdef AUTO_KLINE_SERVICES /* If doing AUTO kline on any services */
+	  if( (okhost(user_host)) || (isoper(user_host)))return;
+
+	  suggest_kline(YES,
+			user,
+			host,
+			NO,
+			identd,
+			"clones/multiple servers");
+
+#else			/* doing AUTO on services.us, but killing only */
+
+	  if( (okhost(user_host)) || (isoper(user_host)))return;
+
+	  (void)sprintf(kbuffer,"KILL %s :services.us clones\n",parm1);
+	  toserv(kbuffer);
+
+	  suggest_kline(NO,
+			user,
+			host,
+			NO,
+			identd,
+			"clones/multiple servers");
+#endif
+#else			/* Not doing AUTO on services.us but reporting */
+
+	  suggest_kline(NO,
+			user,
+			host,
+			NO,
+			identd,
+			"clones/multiple servers");
+#endif
+	  services.kline_suggested = YES;
+	}
+    }
+}
+
+/*
+on_ca_services_notice
+
+inputs		- body from message sent to us from server
+output		- NONE
+side effects	- reports of global cloners
+*/
+
+void on_ca_services_notice(char *body)
+{
+  char *parm1, *parm2, *parm3, *parm4;
+  char *user, *host, *tmp;
+  char dccbuff[DCCBUFF_SIZE];
+  char userathost[MAX_HOST];
+
+	while(*body == ' ')
+		body++;
+
+	parm1 = strtok(body," ");
+	if (parm1 == (char *)NULL)
+		return;
+
+	parm2 = strtok((char *)NULL," ");
+	if(parm2 == (char *)NULL)
+		return;
+
+	parm3 = strtok((char *)NULL," ");
+	if(parm3 == (char *)NULL)
+		return;
+
+	parm4 = strtok((char *)NULL," ");
+	if(parm4 == (char *)NULL)
+		return;
+
+	/*
+	 * If this is services.ca suggesting a kline, we'll do it
+	 * ourselves, thanks very much.  Just return. 
+	 */
+	if (strcasecmp("kline",parm2) == 0)
+		return;
+
+	if (strcasecmp("Nickflood",parm1) == 0)
+	  {
+#ifdef AUTOKSERVICES
+#ifdef AUTO_KILL_NICK_FLOODING
+	    if(autopilot)
+	      {
+		sprintf(dccbuff, "KILL %s :CaSvcs-Reported Nick Flooding\n",
+			parm3);
+		toserv(dccbuff);
+		sprintf(dccbuff,
+			"AutoKilled %s %s for CaSvcs-Reported Nick Flooding",
+			parm3, parm4);
+		sendtoalldcc(dccbuff,SEND_ALL_USERS);
+	      }
+	    else
+#endif
+#endif
+	      {
+		sprintf(dccbuff,
+			"CaSvcs-Reported Nick flooding %s %s",
+			parm3, parm4);
+		sendtoalldcc(dccbuff,SEND_ALL_USERS);
+	      }
+
+	}
+	
+	(void)sprintf(dccbuff,"%s: %s %s %s %s",
+		CA_SERVICES_NAME, parm1, parm2, parm3, strtok(NULL, ""));
+
+	msg(mychannel,dccbuff);
+	sendtoalldcc(dccbuff,SEND_ALL_USERS);
+
+	/*
+	 * Nope, services.ca is reporting clones.  Determine the 
+	 * user@@host.
+	 */
+
+	tmp = strtok(dccbuff,"(");	/* Chop off up to the '(' */
+	tmp = strtok((char *)NULL,")");	/* Chop off up to the ')' */
+
+	user = strtok(tmp,"@@");		/* Chop off up to the ')' */
+	if (user == (char *)NULL)
+		return;			/* Hrm, strtok couldn't parse. */
+
+	host = strtok((char *)NULL, "");
+	if (host == (char *)NULL)
+		return;			/* Hrm, strtok couldn't parse. */
+
+	if (strcasecmp("user-clones",parm2) == 0) {
+		/*
+		 * Is this services.ca reporting multiple user@@hosts?
+		 */
+		suggest_kline(NO,user,host,NO,(*user != '~'), "CaSvcs-Reported User Clones");
+	} else if (strcasecmp("site-clones",parm2) == 0) {
+		/*
+		 * Multiple site clones? 
+		 */
+		suggest_kline(NO,user,host,YES,(*user != '~'), "CaSvcs-Reported Site Clones");
+	} else if (strcasecmp("Nickflood",parm1) == 0) {
+		/*
+		 * Nick flooding twit.
+		 */
+		suggest_kline(NO,user,host,NO,(*user != '~'), "CaSvcs-Reported Nick Flooding");
+	}
+}
+
+/*
+serverproc()
+
+inputs		- NONE
+output		- NONE
+side effects	- process server message
+*/
+
+void serverproc()
+{
+  char *buffer = connections[0].buffer;
+  char *curr;
+  char *rest;
+
+  *source = *body = *fctn = '\0';
+  rest = strchr(buffer,'.');
+  if (!rest || strchr(buffer,' ') < rest)
+    curr = buffer;
+  else {
+    curr = strchr(buffer,' ');
+    if (curr)
+      *(curr++) = '\0';
+    strcpy(source, (*buffer == ':' ? buffer + 1 : buffer));
+    }
+
+  if (curr) {
+    rest = strchr(curr, ' ');
+    if (rest) {
+      *(rest++) = '\0';
+      strcpy(body,rest);
+      }
+    strcpy(fctn,curr);
+    }
+  printf(">%s %s %s\n",source, fctn, body);	/* - zaph */
+#ifdef DEBUGMODE
+  fprintf(outfile,">%s %s %s\n",source, fctn, body);
+#endif
+  proc(source,fctn,body);
+}
+
+/*
+** signon()
+**   Send a USER and a NICK string to the server to facilitate signon.
+**   Parameters: None
+**   Returns: void
+**   PDL:
+**     What it said 4 lines above. :)  Also, initialize the internal
+**     variable holding tcm's current nickname.
+*/
+void signon()
+{
+    char buff[MAX_BUFF];
+
+    connections[0].buffend = connections[0].buffer;
+    if (!*mynick)
+      strcpy (mynick,dfltnick);
+    (void)sprintf(buff,"user %s %s %s :%s\nnick %s\n",
+		  username_config,
+		  ourhostname,
+		  server_name,
+		  ircname_config,
+		  mynick);
+    prnt(connections[0].socket, buff);
+}
+
+/*
+** pong()
+**   Send back a pong to a pinging server.
+**   Parameters:
+**     sock - Socket being pinged
+**     hst - Server doing the pinging
+**   Returns: void
+**   PDL:
+**    Ugly, but it sends a "PONG <servername>\n" message.
+*/
+void pong(int sock,char *hst)
+{
+  prnt(sock,"pong ");
+  prnt(sock,hst);
+  prnt(sock,"\n");
+}
+
+void do_init(void)
+{
+  join(defchannel); 
+  initopers();
+  oper();
+  inithash();
+}
+
+/*
+** linkclosed()
+**   Called when an error has causes the server to close our link.
+**   Parameters: None
+**   Returns: void
+**   PDL:
+**     Close the old dead socket.  If we haven't already reconnected
+**     5 times, wait 5 seconds, reconnect to the server, and re-signon.
+*/
+void linkclosed()
+{
+  (void)close(connections[0].socket);
+  if(logging_fp)
+    (void)fclose(logging_fp);	/* -Dianora */
+  
+  if (++reconnects > MAXRECONNECTS)
+    quit = YES;
+  else
+    {
+      sleep(30);
+      connections[0].socket = bindsocket(serverhost);
+      if (connections[0].socket == INVALID)
+	{
+	  quit = YES;
+	  return;
+	}
+      clear_userlist();
+      load_botlist();
+      signon();
+      freehash();
+      amianoper = NO;
+    }
+}
+
+/*
+** makeconn()
+**   Makes another connection
+*/
+char makeconn(char *hostport,char *nick,char *userhost)
+{
+  int i;
+  char *type;
+  char dccbuff[DCCBUFF_SIZE];
+
+  for (i=1; i<MAXDCCCONNS+1; ++i)
+    if (connections[i].socket == INVALID)
+      {
+	if (maxconns < i+1)
+	  maxconns = i+1;
+	break;
+      }
+
+  if (i > MAXDCCCONNS)
+    return 0;
+
+  connections[i].socket = bindsocket(hostport);
+
+  if (connections[i].socket == INVALID)
+    return 0;
+
+  connections[i].buffer = (char *)malloc(BUFFERSIZE);
+  if(connections[i].buffer == (char *)NULL)
+    {
+      sendtoalldcc("Ran out of memory in makeconn",SEND_ALL_USERS);
+      gracefuldie(0);
+    }
+
+  connections[i].buffend = connections[i].buffer;
+  strncpy(connections[i].nick,nick,MAX_NICK-1);
+  connections[i].nick[MAX_NICK-1] = '\0';
+  strncpy(connections[i].userhost,userhost,MAX_HOST-1);
+  connections[i].userhost[MAX_HOST-1] = '\0';
+  connections[i].type = 0;
+  connections[i].type |= isoper(userhost);
+  
+/* I think the credit for this idea of OPERS_ONLY is from phisher */
+/* my hack though. blame me. - Dianora */
+
+#ifdef OPERS_ONLY
+  if(!(connections[i].type & TYPE_OPER))
+    {
+      prnt(connections[i].socket,
+	   "Sorry, only opers may use this service.\n");
+      (void)close(connections[i].socket);
+      connections[i].socket = INVALID;
+      connections[i].nick[0] = '\0';
+      connections[i].userhost[0] = '\0';
+      connections[i].type = 0;
+      (void)free(connections[i].buffer);
+      return 0;
+    }
+#endif
+  prnt(connections[i].socket,VERSION2);
+  prnt(connections[i].socket,"\n");
+
+  /* Print a message of the day - Dianora */
+  print_motd(connections[i].socket);
+
+#ifdef AUTOPILOT
+  if( autopilot )
+    prnt(connections[i].socket,"autopilot is ON\n");
+  else
+    prnt(connections[i].socket,"autopilot is OFF\n");
+#endif
+
+  type = "User";
+  if(connections[i].type & TYPE_OPER)
+    type = "Oper";
+  if(connections[i].type & TYPE_BOT)
+    type = "Bot";
+
+  sprintf(dccbuff,"%s %s (%s) has connected",
+	  type,
+	  connections[i].nick,
+	  connections[i].userhost);
+  msg(mychannel,dccbuff);
+  sendtoalldcc(dccbuff,SEND_ALL_USERS);
+  prnt(connections[i].socket,"Connected.  Send '.help' for commands.\n");
+  return 1;
+}
+
+/*
+add_connection
+
+inputs		- socket
+		- bot_entry
+output		-
+side effects	-
+*/
+
+int add_connection(int socket,int bot_entry)
+{
+  int i;
+
+  for( i=1; i<MAXDCCCONNS+1; ++i )
+    {
+      if(connections[i].socket == INVALID)
+	{
+	  if(maxconns < i+1)
+	    maxconns = i+ 1;
+	  break;
+	}
+    }
+  if(i > MAXDCCCONNS)
+    return(INVALID);
+
+  connections[i].buffer = (char *)malloc(BUFFERSIZE);
+  if(connections[i].buffer == (char *)NULL)
+    {
+      sendtoalldcc("Ran out of memory in add_connection",SEND_ALL_USERS);
+      gracefuldie(0);
+    }
+
+  connections[i].buffend = connections[i].buffer;
+
+  strncat(connections[i].nick,botlist[bot_entry].theirnick,MAX_NICK-1);
+  
+  connections[i].nick[MAX_NICK-1] = '\0';
+  strncpy(connections[i].userhost,botlist[bot_entry].userathost,MAX_HOST-1);
+  connections[i].userhost[MAX_HOST-1] = '\0';
+  connections[i].socket = socket;
+  connections[i].type = TYPE_BOT|TYPE_OPER|TYPE_REGISTERED;
+  return(i);
+}
+
+/*
+closeconn()
+
+inputs		- connection number
+outptut		- NONE
+side effects	- connection on connection number connnum is closed.
+*/
+
+void closeconn(int connnum)
+{
+  int i;
+  char dccbuff[DCCBUFF_SIZE];
+  char *type;
+
+  if (connections[connnum].socket != INVALID)
+    close(connections[connnum].socket);
+
+  if(connections[connnum].buffer)
+    free (connections[connnum].buffer);
+
+  connections[connnum].buffer = (char *)NULL;
+  connections[connnum].socket = INVALID;
+
+  if (connnum + 1 == maxconns)
+    {
+      for (i=maxconns;i>0;--i)
+	if (connections[i].socket != INVALID)
+	  break;
+      maxconns = i+1;
+    }
+
+  type = "User";
+  if(connections[connnum].type & TYPE_OPER)
+    type = "Oper";
+  if(connections[connnum].type & TYPE_BOT)
+    type = "Bot";
+
+  if(connections[connnum].type & TYPE_PENDING)
+    {
+      (void)sprintf(dccbuff,"Failed Bot connect from %s",
+	      connections[connnum].userhost);
+    }
+  else
+    {
+      sprintf(dccbuff,"%s %s (%s) has disconnected",
+	      type,
+	      connections[connnum].nick,
+	      connections[connnum].userhost);
+    }
+
+  msg(mychannel,dccbuff);
+  sendtoalldcc(dccbuff,SEND_ALL_USERS);
+  connections[connnum].userhost[0] = '\0';
+  connections[connnum].nick[0] = '\0';
+}
+
+/*
+** dccproc()
+**   Handles processing of dcc chat commands
+*/
+void dccproc(int connnum)
+{
+  char *buffer = connections[connnum].buffer;
+  char dccbuff[MAX_BUFF];
+  char who_did_command[2*MAX_NICK];
+  int i;
+  int opers_only = SEND_ALL_USERS; 	/* Is it an oper only message ? */
+  int ignore_bot = NO;
+  int token;
+  char *param1,*param2,*param3;
+
+  /* wot a kludge (to rhyme with sludge) */
+
+  route_entry.to_nick[0] = '\0';
+  route_entry.to_tcm[0] = '\0';
+  route_entry.from_nick[0] = '\0';
+  route_entry.from_tcm[0] = '\0';
+  who_did_command[0] = '\0';
+
+  /* remote message, either to a tcm command parser,
+     or from a user meant to be sent on to another remote tcm,
+     or, its from a remote tcm to be passed onto another tcm
+  */
+
+  if(*buffer == ':')
+    {
+      char *to,*from;
+      char *to_nick;
+      char *to_tcm;
+      char *from_nick;
+      char *from_tcm;
+
+      buffer++;	/* skip the ':' */
+
+      if(connections[connnum].type & TYPE_BOT)
+	{
+	  to = strtok(buffer," ");
+	  if(to == (char *)NULL)return;	/* duh, give up */
+	  from = strtok((char *)NULL," "); 
+	  if(from == (char *)NULL)return; /* duh, give up */
+
+	  to_nick = to;
+	  to_tcm = strchr(to,'@@');
+	  if(to_tcm == (char *)NULL)
+	    to_tcm = to;
+	  else
+	    {
+	      *to_tcm = '\0';
+	      to_tcm++;
+	    }
+
+	  from_nick = from;
+	  strncpy(who_did_command,from,2*MAX_NICK);
+	  printf("DEBUG: from_nick = [%s]\n", from_nick);
+	  from_tcm = strchr(from,'@@');
+	  if(from_tcm == (char *)NULL)return; /*shrug*/
+	  *from_tcm = '\0';
+	  from_tcm++;
+
+	  buffer = strtok((char *)NULL,"");
+	  if(buffer == (char *)NULL)
+	    return;
+	  while(*buffer == ' ')
+	    buffer++;
+	  printf("DEBUG: final buffer [%s]\n", buffer);
+
+	  if(strcasecmp(to_tcm,dfltnick) == 0)	
+	    {
+	      /* Directed to someone on this tcm */
+	      if(strcasecmp(to_nick,dfltnick) == 0)
+		{
+		  /* Directed to the tcm itself */
+		  /* Set up to let prnt return to this address */
+		  strncpy(route_entry.to_nick,from_nick,MAX_NICK);
+		  strncpy(route_entry.to_tcm,from_tcm,MAX_NICK);
+		  strncpy(route_entry.from_nick,dfltnick,MAX_NICK);
+		  strncpy(route_entry.from_tcm,dfltnick,MAX_NICK);
+		  (void)printf("DEBUG: message to this tcm...\n");
+		}
+	      else
+		{
+		  /* Directed to this nick on the tcm */
+		  send_to_nick(to_nick,buffer);
+		  return;
+		}
+	    }
+	  else
+	    {
+	      /* Directed to someone on another tcm */
+	      (void)sprintf(dccbuff,":%s@@%s %s@@%s %s\n",
+			to_nick,
+			to_tcm,
+			from_nick,
+			from_tcm,
+			buffer);
+
+	      sendto_all_linkedbots(dccbuff);
+	      return;
+	    }
+	}
+      else	/* Its user */
+	{
+	  /* :server .command */
+
+	  printf("DEBUG: user buffer = [%s]\n", buffer);
+
+	  to_nick = strtok(buffer," ");
+	  if(to_nick == (char *)NULL)
+	    return;
+	  buffer = strtok((char *)NULL,"");
+	  if(buffer == (char *)NULL)
+	    return;
+	  while(*buffer == ' ')
+	    buffer++;
+
+	  (void)sprintf(dccbuff,":%s@@%s %s@@%s %s\n",
+			to_nick,
+			to_nick,
+			connections[connnum].nick,
+			dfltnick,
+			buffer);
+
+	  sendto_all_linkedbots(dccbuff);
+	  return;
+	}
+    }
+  else
+    {
+      (void)sprintf(who_did_command,"%s@@%s",
+		    connections[connnum].nick,dfltnick);
+
+    }
+
+  printf("DEBUG: After routing parsing buffer = [%s]\n", buffer);
+
+  /* added command character - Dianora */
+  if(*buffer != '.')
+    {	
+      if((buffer[0] == 'o' || buffer[0] == 'O')
+	 && buffer[1] == ':')
+	{
+	  opers_only = SEND_OPERS_ONLY;
+	  if( (connections[connnum].type & TYPE_BOT))
+	    {
+	      strncpy(dccbuff,buffer,MAX_BUFF);
+	    }
+	  else
+	    {
+	      (void)sprintf(dccbuff,"o:<%s@@%s> %s",
+			    connections[connnum].nick,dfltnick,
+			    buffer+2);
+	    }
+	}
+      else
+	{
+	  if((connections[connnum].type & TYPE_BOT))
+	    {
+	      ignore_bot = test_ignore(buffer);
+	      strncpy(dccbuff,buffer,MAX_BUFF);
+	    }
+	  else
+	    {
+	      (void)sprintf(dccbuff,"<%s@@%s> %s",
+			    connections[connnum].nick,dfltnick,buffer);
+	    }
+	}
+      if(!ignore_bot)
+	{
+	  if(connections[connnum].type & TYPE_IGNORE )
+	    {
+	      if(opers_only == SEND_OPERS_ONLY)
+		sendtoalldcc(dccbuff,opers_only);
+	      else
+		prnt(connections[connnum].socket,
+		     "You have IGNORE on, not sending to chat line\n");
+	    }
+	  else
+	    sendtoalldcc(dccbuff,opers_only); /* Thanks Garfr, Talen - Dianora */
+	}
+      return;
+    }
+
+  (void)printf("DEBUG:  buffer [%s]\n", buffer);
+
+  if((connections[connnum].type & TYPE_BOT) &&
+     (route_entry.to_nick[0] == '\0'))
+    {
+
+      (void)printf("DEBUG:type & TYPE_BOT &&\n");
+      (void)printf("DEBUG:route_entry.to_nick[0] = '%c'\n", 
+		   route_entry.to_nick[0]);
+
+
+      if(buffer[1] != 'T')	/* You didn't see this and
+				   I won't admit to it */
+	{
+	  if(connections[connnum].type & TYPE_REGISTERED)
+	    {
+	      strcat(buffer,"\n");
+	      sendto_all_linkedbots(buffer);
+	      toserv(buffer+1);
+	    }
+	  return;
+	}
+    }
+
+  (void)printf("DEBUG: about to skip '.' buffer [%s]\n", buffer);
+
+  buffer++;	/* skip the '.' */
+
+
+  /*
+    This parser should be re-written using a hash table lookup
+    If someone doesn't beat me to it, I'll get around to doing it
+    - Dianora
+    */
+
+  param1 = strtok(buffer," ");
+  param2 = strtok((char *)NULL," ");
+
+  if(!param1)
+    return;
+
+  printf("param1 = [%s]\n", param1);
+
+  if(param2)
+    printf("param2 = [%s]\n", param2);
+
+  if(param2)
+    {
+      if(*param2 == '@@')
+	{
+	  param3 = strtok((char *)NULL,"");
+
+	  /* Directed to someone on another tcm */
+	  if(param3)
+	    {
+	      (void)sprintf(dccbuff,":%s@@%s %s@@%s .%s %s\n",
+			    param2+1,
+			    param2+1,
+			    connections[connnum].nick,
+			    dfltnick,
+			    param1,
+			    param3);
+	    }
+	  else
+	    {
+	      (void)sprintf(dccbuff,":%s@@%s %s@@%s .%s\n",
+			    param2+1,
+			    param2+1,
+			    connections[connnum].nick,
+			    dfltnick,
+			    param1);
+	    }
+  
+	  sendto_all_linkedbots(dccbuff);
+	  return;
+	}
+    }
+
+  param3 = strtok((char *)NULL,"");
+  if(param3)
+    printf("param3 = [%s]\n", param3);
+
+  /*
+    This parser should be re-written using a hash table lookup
+    If someone doesn't beat me to it, I'll get around to doing it
+    - Dianora
+    well, I haven't finished yet. 
+    - Dianora
+    */
+
+  if (!strcasecmp(param1,"clones"))
+    token = K_CLONES;
+  else if (!strcasecmp(param1,"nflood"))
+    token = K_NFLOOD;
+  else if(!strcasecmp(param1,"rehash"))
+    token = K_REHASH;
+  else if(!strcasecmp(param1,"trace"))
+    token = K_TRACE;
+  else if (!strcasecmp(param1,"failures"))
+    token = K_FAILURES;
+  else if (!strcasecmp(param1,"domains"))
+    token = K_DOMAINS;
+  else if (!strcasecmp(param1,"checkversion"))
+    token = K_CHECKVERSION;
+  else if (!strcasecmp(param1,"multi"))
+    token = K_BOTS;
+  else if (!strcasecmp(param1,"bots"))
+    token = K_BOTS;
+  else if (!strcasecmp(param1,"nfind"))
+    token = K_NFIND;
+  else if (!strcasecmp(param1,"list"))
+    token = K_LIST;
+  else if (!strcasecmp(param1,"killlist"))
+    token = K_KILLLIST;
+  else if (!strcasecmp(param1,"kl"))
+    token = K_KILLLIST;
+  else if (!strcasecmp(param1,"gline"))
+    token = K_GLINE;
+  else if (!strcasecmp(param1,"kline"))
+    token = K_KLINE;
+  else if (!strcasecmp(param1,"kclone"))
+    token = K_KCLONE;
+  else if (!strcasecmp(param1,"kflood"))
+    token = K_KFLOOD;
+  else if (!strcasecmp(param1,"kperm"))
+    token = K_KPERM;
+  else if (!strcasecmp(param1,"kbot"))
+    token = K_KBOT;
+  else if (!strcasecmp(param1,"kill"))
+    token = K_KILL;
+  else if (!strcasecmp(param1,"register"))
+    token = K_REGISTER;
+  else if (!strcasecmp(param1,"opers"))
+    token = K_OPERS;
+  else if (!strcasecmp(param1,"tcmlist"))
+    token = K_TCMLIST;
+  else if (!strcasecmp(param1,"tcmconn"))
+    token = K_TCMCONN;
+  else if (!strcasecmp(param1,"allow"))
+    token = K_ALLOW;
+  else if (!strcasecmp(param1,"autopilot"))
+    token = K_AUTOPILOT;
+  else if (!strcasecmp(param1,"connections"))
+    token = K_CONNECTIONS;
+  else if (!strcasecmp(param1,"disconnect"))
+    token = K_DISCONNECT;
+  else if (!strcasecmp(param1,"help"))
+    token = K_HELP;
+  else if (!strcasecmp(param1,"close"))
+    token = K_CLOSE;
+  else if (!strcasecmp(param1,"op"))
+    token = K_OP;
+  else if (!strcasecmp(param1,"cycle"))
+    token = K_CYCLE;
+  else if (!strcasecmp(param1,"die"))
+    token = K_DIE;
+  else if (!strcasecmp(param1,"ignore"))
+    token = K_IGNORE;
+  else if (!strcasecmp(param1,"tcmintro"))
+    token = K_TCMINTRO;
+  else if (!strcasecmp(param1,"tcmident"))
+    token = K_TCMIDENT;
+  else token = 0;
+
+  switch(token)
+    {
+    case K_CLONES:
+      report_clones(connections[connnum].socket);
+      break;
+
+    case K_NFLOOD:
+      report_nick_flooders(connections[connnum].socket);
+      break;
+
+    case K_REHASH:
+      (void)sprintf(dccbuff,"rehash requested by %s",
+		    who_did_command);
+      sendtoalldcc(dccbuff,SEND_ALL_USERS);
+      clear_userlist();
+      load_botlist();
+      initopers();
+      break;
+
+    case K_TRACE:
+      (void)sprintf(dccbuff,"trace requested by %s",
+		    who_did_command);
+      sendtoalldcc(dccbuff,SEND_OPERS_ONLY);
+      freehash();
+      inithash();
+      break;
+
+    case K_FAILURES:
+      if (!param2)
+	report_failures(connections[connnum].socket,10);
+      else if (atoi(param2) < 1)
+	prnt(connections[connnum].socket,"Usage: .failures [min failures]\n");
+      else
+	report_failures(connections[connnum].socket,atoi(param2));
+      break;
+
+    case K_DOMAINS:
+      if (!param2)
+        report_domains(connections[connnum].socket,5);
+      else if (atoi(param2) < 1)
+        prnt(connections[connnum].socket,"Usage: .domains [min users]\n");
+      else
+        report_domains(connections[connnum].socket,atoi(param2));
+      break;
+
+    case K_CHECKVERSION:
+      if (connections[connnum].type & TYPE_OPER)
+	massversion(connections[connnum].socket);
+      else
+	prnt(connections[connnum].socket,
+	     "Only authorized opers may use this command\n");
+      break;
+
+    case K_BOTS:
+      report_multi(connections[connnum].socket,2);
+      break;
+      
+    case K_NFIND:
+      if (connections[connnum].type & TYPE_OPER)
+	{
+	  if (!param2)
+	    prnt(connections[connnum].socket,
+	       "Usage: .nfind <wildcarded nick>\n");
+	  else
+	    list_nicks(connections[connnum].socket,param2);
+	}
+      else
+	prnt(connections[connnum].socket,
+	     "Only authorized opers may use this command\n");
+      break;
+
+    case K_LIST:
+      if (connections[connnum].type & TYPE_OPER)
+	{
+	  if (!param2)
+	    prnt(connections[connnum].socket,
+		 "Usage: .list <wildcarded userhost>\n");
+	  else
+	    list_users(connections[connnum].socket,param2);
+	}
+      else
+	prnt(connections[connnum].socket,
+	     "Only authorized opers may use this command\n");
+      break;
+
+
+    case K_KILLLIST:	/* - Phisher */
+      if (connections[connnum].type & TYPE_REGISTERED)
+	{
+	  if (!param2)
+	    {
+	      prnt(connections[connnum].socket,
+		   "Usage: .killlist <wildcarded userhost> or\n");
+	      prnt(connections[connnum].socket,
+		   "Usage: .kl <wildcarded userhost>\n");
+	    }
+	  else
+	    {
+	      (void)sprintf(dccbuff,"killlist %s by %s",
+			    param2,who_did_command);
+	      sendtoalldcc(dccbuff,SEND_OPERS_ONLY);
+	      kill_list_users(connections[connnum].socket,param2);
+	    }
+	}
+      else
+	prnt(connections[connnum].socket,"You aren't registered\n");
+      break;
+
+/* - Phisher */
+#ifdef REMOTE_KLINE
+
+    case K_GLINE:
+      {
+	char cmd[MAX_BUFF];
+	time_t current_time;
+	struct tm *broken_up_time;
+	char *pattern;	/* u@@h or nick */
+	char *reason;	/* reason to use */
+
+	current_time = time((time_t *)NULL);
+	broken_up_time = localtime(&current_time);
+
+	if( connections[connnum].type & TYPE_GLINE )
+	  {
+	    if(param2)
+	      {
+		pattern = param2;
+		if(pattern)
+		  {
+		    reason = param3;
+		    if( reason )
+		      {
+			/* Removed *@@ prefix from kline parameter -tlj */
+			sprintf(dccbuff,"gline %s : %s added by oper %s",
+				pattern,reason,
+				who_did_command,
+				dfltnick);
+			sendtoalldcc(dccbuff,SEND_OPERS_ONLY);
+			
+			cmd[0] = '.';
+
+			log_kline(broken_up_time,
+				  "GLINE",
+				  pattern,
+				  who_did_command,
+				  reason);
+			
+			sprintf(cmd+1,"KLINE %s :%s by %s %02d/%02d/%02d\n",
+				pattern,reason,
+				who_did_command,
+				(broken_up_time->tm_mon)+1,
+				broken_up_time->tm_mday,
+				broken_up_time->tm_year);
+			toserv(cmd+1);
+			sendto_all_linkedbots(cmd);
+		      }
+		    else
+		      {
+			prnt(connections[connnum].socket,
+			     "missing reason \"kline [nick]|[user@@host] reason\"\n");
+		      }
+		  }
+		else
+		  {
+		    prnt(connections[connnum].socket,
+			 "missing nick/user@@host \".kline [nick]|[user@@host] reason\"\n");
+		  }
+	      }
+	  }
+	else
+	  prnt(connections[connnum].socket,"You don't have gline privilege\n");
+      }
+    break;
+
+    case K_KLINE:
+      if( connections[connnum].type & TYPE_REGISTERED )
+	{
+	  if(param2 == (char *)NULL)
+	    {
+	      prnt(connections[connnum].socket,
+	   "missing nick/user@@host \".kline [nick]|[user@@host] reason\"\n");
+	      return;
+	    }
+	  
+	  if(param3 == (char *)NULL)
+	    {
+	      prnt(connections[connnum].socket,
+		   "missing reason \"kline [nick]|[user@@host] reason\"\n");
+	      return;
+	    }
+	  do_a_kline("kline",param2,param3,who_did_command);
+	}
+      else
+	prnt(connections[connnum].socket,"You aren't registered\n");
+    break;
+
+/* Toast */
+    case K_KCLONE:
+      if( connections[connnum].type & TYPE_REGISTERED )
+	{
+	  if(param2 == (char *)NULL)
+	    {
+	      prnt(connections[connnum].socket,
+		   "missing nick/user@@host \".kclone [nick]|[user@@host]\"\n");
+	      return;
+	    }
+	  do_a_kline("kclone",param2,"Clones are prohibited",who_did_command);
+	}
+      else
+	prnt(connections[connnum].socket,"You aren't registered\n");
+    break;
+
+/* Toast */
+    case K_KFLOOD:
+      if( connections[connnum].type & TYPE_REGISTERED )
+	{
+	  if(param2 == (char *)NULL)
+	    {
+	      prnt(connections[connnum].socket,
+		   "missing nick/user@@host \".kflood [nick]|[user@@host]\"\n");
+	      return;
+	    }
+	  do_a_kline("kflood",param2,"Flooding",who_did_command);
+	}
+      else
+	prnt(connections[connnum].socket,"You aren't registered\n");
+    break;
+
+    case K_KPERM:
+      if( connections[connnum].type & TYPE_REGISTERED )
+	{
+	  if(param2==(char *)NULL)
+	    {
+	      prnt(connections[connnum].socket,
+		   "missing nick/user@@host \".kperm [nick]|[user@@host]\"\n");
+	    }
+	  do_a_kline("kperm",param2,"PERMANENT",who_did_command);
+	}
+      else
+	prnt(connections[connnum].socket,"You aren't registered\n");
+    break;
+
+    case K_KBOT:
+      if( connections[connnum].type & TYPE_REGISTERED )
+	{
+	  if(param2==(char *)NULL)
+	    {
+	      prnt(connections[connnum].socket,
+		   "missing nick/user@@host \".kbot [nick]|[user@@host]\"\n");
+	      return;
+	    }
+	  do_a_kline("kbot",param2,"Bots are prohibited",who_did_command);
+	}
+      else
+	prnt(connections[connnum].socket,"You aren't registered\n");
+    break;
+
+    case K_KILL:
+      {
+        char cmd[MAX_BUFF];
+	time_t current_time;
+	struct tm *broken_up_time;
+        char *pattern;  /* u@@h or nick */
+	char *reason;
+	reason = "NO REASON";
+
+	current_time = time((time_t *)NULL);
+	broken_up_time = localtime(&current_time);
+
+	if( connections[connnum].type & TYPE_REGISTERED )
+	  {
+	    if(param2)
+	      {
+		pattern = param2;
+		reason = param3;
+		    
+		if(pattern && reason)
+		  {
+		    log_kline(broken_up_time,
+			      "KILL",
+			      pattern,
+			      who_did_command,
+			      reason);
+
+		    sprintf(dccbuff,"kill %s : by oper %s %s",
+			    pattern,
+			    who_did_command,
+			    reason);
+
+                    sendtoalldcc(dccbuff,SEND_OPERS_ONLY);
+                    sprintf(cmd,"KILL %s : requested by %s reason- %s\n",
+			    pattern,
+			    who_did_command,
+			    reason);
+                    toserv(cmd);
+                  }
+                else
+                  {
+                    prnt(connections[connnum].socket,
+			 "missing nick/user@@host reason \".kill [nick]|[user@@host] reason\"\n");
+                  }
+              }
+          }
+	else
+	  prnt(connections[connnum].socket,"You aren't registered\n");
+      }
+    break;
+#endif	/* -- #ifdef REMOTE_KLINE */
+
+    case K_REGISTER:
+      {
+        char cmd[MAX_BUFF];
+	char *password;
+
+	if( connections[connnum].type & TYPE_OPER )
+          {
+	    int type;
+
+            if(param2)
+              {
+                password = param2;
+
+                if(password)
+                  {
+		    if(type = 
+		       islegal_pass(connections[connnum].userhost, password))
+			{
+			  connections[connnum].type |= type;
+			  prnt(connections[connnum].socket,
+			       "You are now registered\n");
+			  (void)sprintf(dccbuff,"%s has registered",
+					who_did_command);
+			  sendtoalldcc(dccbuff,SEND_OPERS_ONLY);
+			}
+		    else
+		      {
+			(void)sprintf(dccbuff,"illegal password from %s",
+				      who_did_command);
+			prnt(connections[connnum].socket,"illegal password\n");
+			sendtoalldcc(dccbuff,SEND_OPERS_ONLY);
+		      }
+                  }
+                else
+                  {
+		    prnt(connections[connnum].socket,"missing password\n");
+                  }
+              }
+          }
+	else
+	  prnt(connections[connnum].socket,
+	       "Only authorized opers may use this command\n");
+      }
+    break;
+
+    case K_OPERS:
+      {
+	int i;
+	char *usernick;
+
+	for(i=0;i<MAXUSERS;i++)
+	  {
+	    if(userlist[i].userathost == (char *)NULL)
+	      break;
+
+	    if(userlist[i].usernick == (char *)NULL)
+	      usernick = "-DCC-";
+	    else
+	      usernick = userlist[i].usernick;
+
+	    (void)sprintf(dccbuff,"%s [%s] %s\n",
+			  userlist[i].userathost,
+			  usernick,
+			  type_show(userlist[i].type));
+			  
+	    prnt(connections[connnum].socket,dccbuff);
+	  }
+      }
+    break;
+
+    case K_TCMLIST:
+      {
+	int i;
+
+	for(i=0;i<MAXBOTS;i++)
+	  {
+	    if(botlist[i].userathost == (char *)NULL)
+	      break;
+	    (void)sprintf(dccbuff,"%s@@%s\n",
+			  botlist[i].theirnick,
+			  botlist[i].userathost);
+	    prnt(connections[connnum].socket,dccbuff);
+	  }
+      }
+    break;
+
+    case K_TCMCONN:
+      {
+	if(connections[connnum].type & TYPE_OPER)
+	  {
+	    int i;
+	    int match;
+	    int new_connnum;
+
+	    match = NO;
+
+	    if(param2)
+	      match = YES;
+
+	    for(i=0;i<MAXBOTS;i++)
+	      {
+		int socket;
+		
+		if(botlist[i].userathost == (char *)NULL)
+		  break;
+
+		if(match && (strcasecmp(botlist[i].theirnick, param2) != 0))
+		  continue;
+
+		if(botlist[i].port == 0)
+		  (void)sprintf(dccbuff,"%s:%d",
+				botlist[i].userathost,
+				TCM_PORT);
+		else
+		  (void)sprintf(dccbuff,"%s:%d",
+				botlist[i].userathost,
+				botlist[i].port);
+		
+		if((socket = bindsocket(dccbuff)) > 0)
+		  {
+		    new_connnum = add_connection(socket,i);
+		    if(new_connnum == INVALID)
+		      (void)close(socket);
+		    else
+		      {
+			int j;
+
+			/* Extra paranoia doesn't hurt at all */
+			if(botlist[i].theirnick && botlist[i].password)
+			  {
+			    (void)sprintf(dccbuff,"%s %s %s\n",
+					  botlist[i].theirnick,
+					  dfltnick,
+					  botlist[i].password);
+			    prnt(socket,dccbuff);
+			    (void)sprintf(dccbuff,".TCMINTRO %s %s ",
+					  dfltnick,
+					  botlist[i].theirnick);
+
+			    (void)printf("DEBUG: dccbuff = [%s]\n",
+					 dccbuff);
+
+			    for (j=1;j<maxconns;++j)
+			      if (connections[i].socket != INVALID)
+				{
+				  if(connections[j].type & TYPE_BOT)
+				    {
+				      (void)strcat(dccbuff," ");
+				      (void)strcat(dccbuff,
+						   connections[i].nick);
+				      (void)printf("DEBUG: dccbuff = [%s]\n",
+						   dccbuff);
+				    }
+				}
+			    strcat(dccbuff,"\n");
+			    printf("DEBUG: tcminfo [%s]\n",dccbuff);
+			    sendto_all_linkedbots(dccbuff);
+			  }
+		      }
+		  }
+	      }
+	  }
+	else
+	  prnt(connections[connnum].socket,
+	       "Only authorized opers may use this command\n");
+      }
+    break;
+
+
+    case K_TCMINTRO:
+      {
+	/* param2 param3 are possibly already set up for tcm nicks... */
+	/* I pick up any more after param3 using tcmnick */
+
+	char *tcmnick;
+	char *newtcm;
+
+	if(param2)
+	  {
+	    printf("DEBUG: tcmnick [%s] ", param2);
+	  }
+	else
+	  return;
+
+	newtcm = strtok(param3," ");;
+	if(newtcm)
+	  {
+	    printf("linking [%s]\n", newtcm);
+	  }
+	else
+	  return;
+
+	tcmnick = strtok((char *)NULL," ");
+	while(tcmnick)
+	  {
+	    printf("DEBUG: introducing [%s]\n", tcmnick);
+	    if( already_have_tcm(tcmnick) )
+	      {
+		printf("DEBUG: already have [%s]\n",  tcmnick);
+		(void)sprintf(dccbuff,
+     "!%s! Routing loop tcm [%s] linking in [%s] finding already present [%s]",
+			   dfltnick,param2,newtcm,tcmnick);
+		sendtoalldcc(dccbuff,SEND_ALL_USERS);
+		(void)sprintf(dccbuff,":%s@@%s -@@%s .disconnect %s\n",
+			    param2,
+			    param2,
+			    dfltnick,
+			    newtcm);
+
+		sendto_all_linkedbots(dccbuff);
+	      }
+	    tcmnick = strtok((char *)NULL," ");
+	  }
+      }
+      break;
+
+    case K_ALLOW:
+#ifdef PARANOID_PRIVS
+      if (connections[connnum].type & TYPE_REGISTERED)
+#else
+      if (connections[connnum].type & TYPE_OPER)
+#endif
+	{
+	  int i;
+	  int found_one;
+
+	  if(param2)
+	    {
+	      if(*param2 == '-')
+		(void)sprintf(dccbuff,"allow of %s turned off by %s",
+			      param2+1,
+			      who_did_command);
+	      else
+		(void)sprintf(dccbuff,"allow of %s turned on by %s",
+			      param2,
+			      who_did_command);
+		
+	      sendtoalldcc(dccbuff,SEND_OPERS_ONLY);
+	      setup_allow(param2);
+	    }
+	  else
+	    {
+	      for(i = 0; i < MAX_ALLOW_SIZE; i++ )
+		{
+		  if(allow_nick[i][0] != '-')
+		    {
+		      found_one = YES;
+		      (void)sprintf(dccbuff,
+				    "allowed: %s\n",allow_nick[i]);
+		      prnt(connections[connnum].socket,dccbuff);
+		    }
+		}
+	      
+	      if(!found_one)
+		{
+		  (void)sprintf(dccbuff,
+				"There are no tcm allows in place\n");
+		  prnt(connections[connnum].socket,dccbuff);
+		}
+	    }
+	}
+      else
+	{
+#ifdef PARANOID_PRIVS
+	  prnt(connections[connnum].socket,"You aren't registered\n");
+#else
+	  prnt(connections[connnum].socket,
+	       "Only authorized opers may use this command.\n");
+#endif
+	}
+      break;
+
+#ifdef AUTOPILOT
+
+      case K_AUTOPILOT:
+	if (!param2)
+	  {
+	    if( autopilot )
+	      prnt(connections[connnum].socket,"autopilot is ON\n");
+	    else
+	      prnt(connections[connnum].socket,"autopilot is OFF\n");
+	  }
+	else
+	  {
+	    if(connections[connnum].type & TYPE_OPER)
+	      {
+		if( !strncasecmp(param2,"ON",2))
+		  {
+		    autopilot = YES;
+		    (void)sprintf(dccbuff,"autopilot turned ON by %s",
+				  who_did_command);
+		    sendtoalldcc(dccbuff,SEND_OPERS_ONLY);
+		  }
+		else if( !strncasecmp(param2,"OFF",3))
+		  {
+		    autopilot = NO;
+		    (void)sprintf(dccbuff,"autopilot turned OFF by %s",
+				  who_did_command);
+		    sendtoalldcc(dccbuff,SEND_OPERS_ONLY);
+		  }
+	      }
+	    else
+	      prnt(connections[connnum].socket,
+		   "Only authorized opers may use this command\n");
+	  }
+	break;
+#endif
+	
+      case K_CONNECTIONS:
+	for (i=1;i<maxconns;++i)
+	  if (connections[i].socket != INVALID)
+	    {
+	      sprintf(dccbuff,"%s %s (%s) is connected\n",
+		      connections[i].nick,
+		      type_show(connections[i].type),
+		      connections[i].userhost
+		      );
+	      prnt(connections[connnum].socket,dccbuff);
+	    }
+	break;
+
+      case K_DISCONNECT:
+#ifdef PARANOID_PRIVS
+	if (connections[connnum].type & TYPE_REGISTERED)
+#else
+	if (connections[connnum].type & TYPE_OPER)
+#endif
+	  {
+	    if (!param2)
+	      prnt(connections[connnum].socket,"Usage: disconnect <nickname>\n");
+	    else
+	      {
+		char *type;
+
+		for (i=1;i<maxconns;++i)
+		  if (connections[i].socket != INVALID &&
+		      !strcasecmp(param2,connections[i].nick))
+		    {
+		      type = "user";
+		      if(connections[i].type & TYPE_OPER)
+			type = "oper";
+		      if(connections[i].type & TYPE_BOT)
+			type = "Bot";
+
+		      sprintf(dccbuff,"Disconnecting %s %s\n",
+			      type,
+			      connections[i].nick);
+		      prnt(connections[connnum].socket,dccbuff);
+		      sprintf(dccbuff,"You have been disconnected by oper %s\n",
+			      who_did_command);
+		      prnt(connections[i].socket,dccbuff);
+		      closeconn(i);
+		    }
+	      }
+	  }
+	else
+#ifdef PARANOID_PRIVS
+	  prnt(connections[connnum].socket,"You aren't registered\n");
+#else
+	  prnt(connections[connnum].socket,
+	   "Only authorized opers may use this command.\n");
+#endif
+	  break;
+
+      case K_HELP:
+	print_help(connections[connnum].socket, param2);
+	break;
+
+      case K_CLOSE:
+	prnt(connections[connnum].socket,"Closing connection\n");
+	closeconn(connnum);
+	break;
+
+/* Added by ParaGod */
+/* additional modifications by Dianora */
+
+      case K_OP:
+	{
+#ifdef PARANOID_PRIVS
+	  if (connections[connnum].type & TYPE_REGISTERED)
+#else
+	  if (connections[connnum].type & TYPE_OPER)
+#endif
+	    {
+	      if (!param2)
+		prnt(connections[connnum].socket,"Usage: op [nick]\n");
+	      else
+		op(defchannel,param3); 
+	    }
+	  else
+#ifdef PARANOID_PRIVS
+	    prnt(connections[connnum].socket,"You aren't registered\n");
+#else
+	    prnt(connections[connnum].socket,
+	     "Only authorized opers may use this command.\n");
+#endif
+	}
+      break;
+
+    case K_CYCLE:
+      {
+#ifdef PARANOID_PRIVS
+	if (connections[connnum].type & TYPE_REGISTERED)
+#else
+	if (connections[connnum].type & TYPE_OPER)
+#endif
+	  {
+	    leave(defchannel);
+	    sendtoalldcc("I'm cycling.  Be right back.", SEND_OPERS_ONLY);
+	    sleep(1);
+	    join(defchannel);
+	  }
+	else
+#ifdef PARANOID_PRIVS
+	  prnt(connections[connnum].socket,"You aren't registered\n");
+#else
+	  prnt(connections[connnum].socket,
+	     "Only authorized opers may use this command.\n");
+#endif
+      }
+    break;
+
+    case K_DIE:
+      {
+	if(!(connections[connnum].type & TYPE_BOT))
+	  {
+	   if(connections[connnum].type & TYPE_OPER) 
+	     {
+	       sendtoalldcc("I've been ordered to quit irc, goodbye.", SEND_ALL_USERS);
+	       prnt(connections[0].socket,"QUIT :Dead by request!\n");
+	       exit(1);
+	     }
+	   else
+	     prnt(connections[connnum].socket,
+		  "Only authorized opers may use this command\n");
+	  }
+	else
+	  prnt(connections[connnum].socket,
+	       "Disabled for remote tcm's\n");
+      }
+    /* End of stuff added by ParaGod */
+    break;
+
+    case K_IGNORE:
+      if(param2)
+	{
+	  if(*param2 == '-')
+	    (void)sprintf(dccbuff,"ignore of chatline turned off by %s",
+			  who_did_command);
+	  connections[connnum].type &= ~TYPE_IGNORE;
+	}
+      else
+	{
+	  (void)sprintf(dccbuff,"ignore of chatline turned on by %s",
+			who_did_command);
+	  connections[connnum].type |= TYPE_IGNORE;
+	}
+
+      sendtoalldcc(dccbuff,SEND_ALL_USERS);
+      break;
+
+    case K_TCMIDENT:
+
+      break;
+
+    default:
+      prnt(connections[connnum].socket,"Unknown command\n");
+      break;
+    }
+}
+
+/*
+do_a_kline()
+
+inputs		- command used i.e. ".kline", ".kclone" etc.
+		- pattern (i.e. nick or user@@host)
+		- reason
+		- who asked for this (oper)
+output		- NONE
+side effects	- someone gets k-lined
+
+
+*/
+
+void do_a_kline(char *command_name,char *pattern,
+		char *reason,char *who_did_command)
+{
+    char cmd[MAX_BUFF];
+    char dccbuff[MAX_BUFF];
+    time_t current_time;
+    struct tm *broken_up_time;
+
+#ifdef RESTRICT_REMOTE_KLINE
+    if(route_entry.to_nick[0] != '\0')
+      return;
+#endif
+
+    current_time = time((time_t *)NULL);
+    broken_up_time = localtime(&current_time);
+
+    if(pattern == (char *)NULL)return;
+    if(reason == (char *)NULL)return;
+
+    /* Removed *@@ prefix from kline parameter -tlj */
+    sprintf(dccbuff,"%s %s : %s added by oper %s",
+	    command_name,pattern,reason,
+	    who_did_command);
+    sendtoalldcc(dccbuff,SEND_OPERS_ONLY);
+
+    /* If the kline doesn't come from the local tcm
+       and tcm has been compiled to restrict remote klines
+       then just ignore it */
+
+
+    log_kline(broken_up_time,
+	      "KLINE",
+	      pattern,
+	      who_did_command,
+	      reason);
+
+    sprintf(cmd,"KLINE %s :%s by %s %02d/%02d/%02d\n",
+	    pattern,reason,
+	    who_did_command,
+	    (broken_up_time->tm_mon)+1,
+	    broken_up_time->tm_mday,
+	    broken_up_time->tm_year);
+    toserv(cmd);
+
+}
+
+
+/*
+already_have_tcm
+
+inputs		- new nick being introduced
+output		- YES if this tcm nick is already linked to me
+		  NO if this tcm nick is not already linked to me
+side effects	- NONE
+*/
+int already_have_tcm(char *tcmnick)
+{
+  int i;
+
+  printf("already_have_tcm() tcmnick = [%s]\n", tcmnick );
+
+    for (i=1;i<maxconns;++i)
+      if (connections[i].socket != INVALID)
+	{
+	  if(connections[i].type & TYPE_BOT)
+	    {
+	      printf("connections[%d].nick [%s] tcmnick [%s]\n",
+		     i,connections[i].nick, tcmnick );
+	      if(strcasecmp(connections[i].nick, tcmnick) == 0)
+		{
+		  printf("returning YES\n");
+		  return(YES);
+		}
+	    }
+	}
+
+  return(NO);
+}
+
+
+/*
+** proc()
+**   Parse server messages based on the function and handle them.
+**   Parameters:
+**     source - nick!user@@host or server host that sent the message
+**     fctn - function for the server msgs (e.g. PRIVMSG, MODE, etc.)
+**     param - The remainder of the server message
+**   Returns: void
+**   PDL:
+**     If the source is in nick!user@@host format, split the nickname off
+**     from the userhost.  Split the body off from the parameter for the
+**     message.  The parameter is generally either our nickname or the
+**     nickname directly affected by this message.  You can kind of figure
+**     the rest of the giant 'if' statement out.  Occasionally we need to
+**     parse additional parameters out of the body.  To find out what all
+**     the numeric messages are, check out 'numeric.h' that comes with the
+**     server code.  ADDED: watch out for partial PRIVMSGs received from the
+**     server... hold them up and make sure to stay synced with the timer
+**     signals that may be ongoing.
+*/
+void proc(char *source,char *fctn,char *param)
+{
+    char *userhost, *body;
+    char *modeparms;
+    int i;
+
+    if ((userhost = strchr(source,'!')) != NULL) {
+      *(userhost++) = '\0';
+      if (*userhost == '~')
+        ++userhost;
+      }
+
+    if ((body = strchr(param,' ')) != NULL) {
+      *(body++) = '\0';
+      if (*body == ':')
+        ++body;
+      }
+      
+    if (!strcmp(fctn,"PRIVMSG")) {
+        privmsg(source, userhost, body,
+                ((*param == '#'  || *param == '&') ? param : source));
+        }
+    else if (!strcmp(fctn,"PING"))
+        pong(connections[0].socket,param);
+    else if (!strcmp(fctn,"ERROR")) {
+	if (!wldcmp("*closing*",param)) {
+	  if (!wldcmp("*nick coll*",body))
+	    onnicktaken();
+	  linkclosed();
+	  }
+        }
+    else if (!strcmp(fctn,"KILL"))
+        if (strchr(source,'.')) {
+	    onnicktaken();
+            linkclosed();
+	    }
+        else
+	    quit = YES;
+    else if (!strcmp(fctn,"JOIN"))
+        onjoin(source, param);
+    else if (!strcmp(fctn,"KICK")) {
+        if (modeparms = strchr(body,' '))    /* 2.8 fix */
+          *modeparms = '\0';
+        onkick(body,param);
+	}
+    else if (!strcmp(fctn,"NICK"))
+        onnick(source,param);
+    else if (!strcmp(fctn,"433"))
+	onnicktaken();
+    else if (!strcmp(fctn,"451"))	/* -Dianora "You have not registered"*/
+      linkclosed();
+    else if (!strcmp(fctn,"474") || !strcmp(fctn,"471") ||
+             !strcmp(fctn,"475") || !strcmp(fctn,"473")) {
+	*(strchr(body,' ')) = '\0';
+        cannotjoin(body);
+    }
+    else if (!strcmp(fctn,"001")) {	/* Thanks.. ThemBones */
+      if (amianoper == NO)
+	do_init();
+    }
+    else if (!strcmp(fctn,"204"))	/* RPL_TRACEOPERATOR */
+      ontraceuser(body);
+    else if (!strcmp(fctn,"205"))	/* RPL_TRACEUSER */
+        ontraceuser(body);
+    else if (!strcmp(fctn,"209"))	/* RPL_TRACECLASS */
+        ontraceclass();
+/* - Dianora */
+    else if (!strcmp(fctn,"243"))
+      on_stats_o(body);
+    else if (!strcmp(fctn,"219"))
+      /* do nothing */ ;
+/* - Dianora */
+    else if (!strcmp(fctn,"NOTICE"))
+      {
+	char dccbuff[DCCBUFF_SIZE];
+
+	if( strcasecmp(source,server_name) == 0 )
+	  {
+	    if(strncmp(body,"*** Notice -- ",14) == 0)
+	      onservnotice(body+14);
+	  }
+	else if(strcasecmp(source,SERVICES_NAME) == 0)
+	  {
+	    on_services_notice(body);
+	  }
+         else if(strcasecmp(source,CA_SERVICES_NAME) == 0) {
+           on_ca_services_notice(body);
+         }
+      } else if (!strcmp(fctn,"303")) { 
+        /* 
+         * ISON reply for services.ca/ca-svcs 
+         */
+        if (!strcmp(body,"CA-SVCS ")) {
+          if (!GettingCASVCSReports) {
+            /*
+             * Okay, CA-SVCS is online.  It's just signed on, so we
+             * need to subscribe to the clone list for our server.
+             */
+            toserv("PRIVMSG CA-SVCS :ADDNOTIFY HERE\r\n");
+            GettingCASVCSReports = YES;
+          }
+        } else {
+          /*
+           * CA-SVCS isn't online.  Make sure we know about that, so
+           * we can detect when it signs on.
+           */
+          GettingCASVCSReports = NO;
+        }
+      }
+}
+
+/*
+** gracefuldie()
+**   Called when we encounter a segmentation fault.
+**   Parameters: None
+**   Returns: void
+**   PDL:
+**     While debugging, I got so many seg faults that it pissed me off enough
+**     to write this.  When dying from a seg fault, open files are not closed.
+**     This means I lose the last 8K or so that was appended to the debug
+**     logfile, including the thing that caused the seg fault.  This will
+**     close the file before dying... Not too much more graceful, I agree.
+*/
+void gracefuldie(int sig)
+{
+#ifdef DEBUGMODE
+  fclose(outfile);
+#endif
+
+  if(logging_fp != (FILE *)NULL)
+    (void)fclose(logging_fp);
+
+  prnt(connections[0].socket,"QUIT :Woo hoo!  Bot crash!\n");
+  
+/* At least, give me a core file to work with 
+   - Dianora 
+*/
+  if(sig != SIGTERM )
+    abort();
+  exit(1);
+}
+
+/*
+reload_user_list()
+
+  Thanks for the idea garfr
+
+inputs - NONE
+output - NONE
+side effects -
+  	       reloads user list without having to restart mobot
+	       Now just re does the trace/ and stats O
+
+	       - Dianora
+*/
+
+void reload_user_list(void)
+{
+  clear_userlist();
+  load_botlist();
+  initopers();
+
+  load_hostlist();
+  freehash();
+  inithash();
+  sendtoalldcc("*** Caught SIGHUP ***",SEND_ALL_USERS);
+}
+
+/*
+** main()
+**   Duh, hey chief... What does a main do?
+**   Parameters:
+**     argc - Count of command line arguments
+**     argv - List of command line arguments
+**   Returns: When the program dies.
+**   PDL:
+**     Look for up to two command line arguments: first, a server name to
+**     overrride the default SERV in config.h.  This is recognized by having
+**     a '.' in the string, which a channel name cannot have.  Second, look
+**     for a default channel to override INCH from server.h.  The channel name
+**     must NOT contain a '#' (since # is tough to pass from the shell).  Set
+**     up assorted things: random numbers, handlers for seg faults and timers,
+**     initialize the internal stores for songs, insults, users, and helper
+**     bots.  Attach tcm to the server, sign her on to IRC, join her up
+**     to the channel, and loop through processing incoming server messages
+**     until tcm is told to quit, is killed, or gives up reconnecting.
+*/
+main(argc,argv)
+int argc;
+char *argv[];
+{
+  int i;
+
+  init_userlist();
+  services.last_checked_time = time((time_t *)NULL);
+
+  if(argc < 2)
+    load_config_file(CONFIG_FILE);
+  else
+    load_config_file(argv[1]);
+
+  strcpy(serverhost,server_config);	/* Load up desired server */
+/*
+  I removed the command line options for server/channel
+  do it in the tcm.cf file... - Dianora
+*/
+  for (i=0;i<MAXDCCCONNS+1;++i)
+    connections[i].socket = INVALID;
+
+  *mychannel = 0;
+  srand(time(NULL));	/* -zaph */
+  signal(SIGSEGV,gracefuldie);
+  signal(SIGBUS,gracefuldie);
+  signal(SIGTERM,gracefuldie);
+  signal(SIGHUP,reload_user_list);
+
+/* lets write our pid -Dianora */
+
+  if((outfile = fopen("tcm.pid","w")) == (FILE *)NULL)
+    {
+      fprintf(stderr,"Cannot write tcm.pid\n");
+      exit(1);
+    }
+  (void)fprintf(outfile,"%d", getpid());
+  (void)fclose(outfile);
+
+#ifdef DEBUGMODE
+  if( (outfile = fopen(DEBUG_LOGFILE,"w")) == (FILE *)NULL)
+    {
+      (void)fprintf(stderr,"Cannot create %s\n",DEBUG_LOGFILE);
+      exit(1);
+    }
+#endif
+
+  load_hostlist();
+
+  connections[0].socket = bindsocket(serverhost);
+  if (connections[0].socket == INVALID)
+    exit(1);
+  connections[0].buffer = (char *)malloc(BUFFERSIZE);
+
+  if(connections[0].buffer == (char *)NULL)
+    {
+      fprintf(stderr,"memory allocation error in main()\n");
+      exit(1);
+    }
+
+  connections[0].type = 0;
+  maxconns = 1;
+  FD_ZERO (&nullfds);
+
+  if(virtual_host_config[0] != '\0')
+    {
+      strncpy(ourhostname,virtual_host_config,MAX_HOST-1);
+    }
+  else
+    {
+      gethostname(ourhostname,MAX_HOST-1);
+      i = strlen(ourhostname);
+#ifndef BSDI
+      getdomainname(ourhostname+i+1,(MAX_HOST-2)-i);
+#else
+      /* getdomainname() doesn't exist on BSDI as best I can tell,
+	 so here's some ugliness... and yes, I'm aware I could use
+	 DNS lookups to do this, but I'm tired as hell and don't
+	 feel like adding it right now */
+      strcpy(ourhostname+i+1,DOMAIN);
+#endif
+      ourhostname[i] = '.';
+    }
+  *mynick = '\0';
+  load_botlist();
+  signon();
+  amianoper = NO;
+  init_allow_nick();
+  init_nick_change_table();
+  init_link_look_table();
+  init_remote_tcm_listen();
+
+  while(!quit)
+    rdpt();
+
+  prnt(connections[0].socket,
+       "QUIT :Bot terminating normally\n");
+#ifdef DEBUGMODE
+  fclose(outfile);
+#endif
+}
+
+
+/*
+initlog()
+
+inputs - NONE
+output - NONE
+side effects
+
+	- Dianora
+*/
+
+void initlog(void)
+{
+  time_t current_time;
+  struct tm *broken_up_time;
+  char filename[MAX_BUFF];
+  char command[MAX_BUFF];
+  char last_filename[MAX_BUFF];
+  char *p;
+  FILE *last_log_fp;
+  FILE *email_fp;
+  FILE *log_to_email_fp;
+
+  last_filename[0] = '\0';
+
+  if((last_log_fp = fopen(LAST_LOG_NAME,"r")) != (FILE *)NULL)
+    {
+      (void)fgets(last_filename,MAX_BUFF-1,last_log_fp);
+      p = strchr(last_filename,'\n');
+      if(p)
+	*p = '\0';
+      printf("last_filename = [%s]\n", last_filename );
+      (void)fclose(last_log_fp);
+    }
+
+  current_time = time((time_t *)NULL);
+  broken_up_time = localtime(&current_time);
+
+  (void)sprintf(filename,"%s_%02d_%02d_%02d",LOGFILE,
+		(broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+		broken_up_time->tm_year);
+
+  logging_fp = fopen(filename,"a");
+
+  if(email_config[0] == '\0')
+    return;
+
+  if( last_filename[0] == '\0')
+    {
+      strcpy(last_filename,filename);
+    }
+
+  if( strcmp(last_filename,filename) != 0 )
+    {
+      (void)sprintf(command,"%s \"clone report\" %s",HOW_TO_MAIL,
+		    email_config);
+      if( (email_fp = popen(command,"w")) != (FILE *)NULL)
+	{
+	  if((log_to_email_fp = fopen(last_filename,"r")) != (FILE *)NULL)
+	    {
+	      while(fgets(command,MAX_BUFF-1,log_to_email_fp ))
+		fputs(command,email_fp);
+	    }
+	}
+      (void)fclose(log_to_email_fp);
+      (void)fclose(email_fp);
+      (void)unlink(last_filename);
+    }
+
+  if((last_log_fp = fopen(LAST_LOG_NAME,"w")) != (FILE *)NULL)
+    {
+      (void)fputs(filename,last_log_fp);
+      (void)fclose(last_log_fp);
+    }
+}
+
+/*
+log_kline
+
+input		- struct tm pointer
+		- command_name "KLINE" "GLINE" etc.
+		- who_did_command who did the command
+		- reason
+output		- none
+side effects	- log entry made
+*/
+
+void log_kline(struct tm *broken_up_time,
+	       char *command_name,
+	       char *pattern,
+	       char *who_did_command,char *reason)
+{
+FILE *fp_log;
+
+  if((fp_log = fopen(KILL_KLINE_LOG,"a")) != (FILE *)NULL)
+    {
+      fprintf(fp_log,"%02d/%02d/%d %02d:%02d %s %s by %s for %s\n",
+	      (broken_up_time->tm_mon)+1,
+	      broken_up_time->tm_mday,
+	      broken_up_time->tm_year,
+	      broken_up_time->tm_hour,
+	      broken_up_time->tm_min,
+	      command_name,pattern,who_did_command,reason);
+
+      (void)fclose(fp_log);
+    }
+}
+
+/* 
+init_remote_tcm_listen
+
+inputs		- NONE
+output		- NONE
+side effects	- just listen on tcm_port port. nothing fancy.
+
+*/
+
+void init_remote_tcm_listen(void)
+{
+struct sockaddr_in socketname;
+int blocking_mode;
+
+  bzero(&socketname,sizeof(struct sockaddr));
+  socketname.sin_family = AF_INET;
+  socketname.sin_addr.s_addr = INADDR_ANY;
+  socketname.sin_port = htons(tcm_port);
+
+  if( (remote_tcm_socket = socket(PF_INET,SOCK_STREAM,6)) < 0)
+    {
+      fprintf(stderr,"Can't create socket for %d\n",tcm_port);
+      exit(1);
+    }
+
+  if(bind(remote_tcm_socket,(struct sockaddr *)&socketname,
+	  sizeof(socketname)) < 0)
+    {
+      fprintf(stderr,"Can't bind TCM_PORT %d\n",TCM_PORT);
+      exit(1);
+    }
+
+  if ( listen(remote_tcm_socket,4) < 0 )
+    {
+      fprintf(stderr,"Can't listen on TCM_PORT\n");
+      exit(1);
+    }
+}
+
+/*
+connect_remote_tcm()
+
+inputs 		- INVALID or a connection number
+output		- NONE
+side effects	-
+*/
+
+void connect_remote_tcm(int connnum)
+{
+  int i;
+  struct sockaddr_in incoming_addr;
+  struct hostent *host_seen;
+  int addrlen;
+  int lnth;
+  char dccbuff[DCCBUFF_SIZE];
+
+  if(connnum == INVALID)
+    {
+      for (i=1; i<MAXDCCCONNS+1; ++i)
+	{
+	  if (connections[i].socket == INVALID)
+	    {
+	      if (maxconns < i+1)
+		maxconns = i+1;
+	      break;
+	    }
+	}
+      if(i > MAXDCCCONNS)
+	return;
+
+      addrlen = sizeof(struct sockaddr);
+      if((connections[i].socket = accept(remote_tcm_socket,
+			 (struct sockaddr *)&incoming_addr,&addrlen)) < 0 )
+	{
+	  fprintf(stderr,"Error in remote tcm connect on accept\n");
+	  return;
+	}
+      connections[i].buffer = (char *)malloc(BUFFERSIZE);
+      if(connections[i].buffer == (char *)NULL)
+	{
+	  sendtoalldcc("Ran out of memory in ",SEND_ALL_USERS);
+	  gracefuldie(0);
+	}
+      connections[i].buffend = connections[i].buffer;
+      connections[i].type = TYPE_PENDING|TYPE_BOT;
+      connections[i].last_message_time = time((time_t *)NULL);
+
+      host_seen = gethostbyaddr((char *)&incoming_addr.sin_addr.s_addr,
+				4,AF_INET);
+
+      if(host_seen)
+	strncpy(connections[i].userhost,(char *)host_seen->h_name,MAX_HOST-1);
+      else
+	strncpy(connections[i].userhost,
+		inet_ntoa(incoming_addr.sin_addr),MAX_HOST-1);
+
+      (void)sprintf(dccbuff,"Bot connection from %s",
+	      connections[i].userhost);
+      msg(mychannel,dccbuff);
+      sendtoalldcc(dccbuff,SEND_ALL_USERS);
+    }
+  else
+    {
+      if(connections[connnum].type & TYPE_PENDING)
+	{
+	  char *myname;
+	  char *botname;
+	  char *password;
+	  int  type;
+
+	  myname = strtok(connections[connnum].buffend," ");
+
+	  if(myname != (char *)NULL)
+	    {
+	      if( strcasecmp(myname,dfltnick) != 0 )
+		{
+		  (void)sprintf(dccbuff,
+				"illegal connection from %s wrong myname",
+				connections[connnum].userhost);
+		  sendtoalldcc(dccbuff,SEND_ALL_USERS);
+		  closeconn(connnum);
+		  return;
+		}
+
+	      botname = strtok((char *)NULL," ");
+	      if(botname == (char *)NULL)
+		{
+		  (void)sprintf(dccbuff,
+				"illegal connection from %s missing botname",
+				connections[connnum].userhost);
+		  sendtoalldcc(dccbuff,SEND_ALL_USERS);
+		  closeconn(connnum);
+		  return;
+		}
+
+	      password = strtok((char *)NULL,"");
+	      if(password != (char *)NULL)
+		{
+		  if( type = islinkedbot(connnum,botname,password))
+		    {
+		      (void)sprintf(dccbuff,"%s@@%s link bot has connected",
+				    connections[connnum].nick,
+				    connections[connnum].userhost);
+		      sendtoalldcc(dccbuff,SEND_ALL_USERS);
+		      connections[connnum].type = type;
+		    }
+		  else
+		    {
+		      (void)sprintf(dccbuff,
+			    "illegal connection from %s wrong password",
+			    connections[connnum].userhost);
+		      sendtoalldcc(dccbuff,SEND_ALL_USERS);
+		      closeconn(connnum);
+		    }
+		}
+	    }
+	  else
+	    {
+	      (void)sprintf(dccbuff,"illegal connection from %s",
+			    connections[connnum].userhost);
+	      sendtoalldcc(dccbuff,SEND_ALL_USERS);
+	      closeconn(connnum);
+	    }
+	}
+      else
+	{
+	  dccproc(connnum);
+	}
+    }
+}
+
+/*
+sendto_all_linkedbots()
+
+inputs		- command to relay as input
+output		- NONE
+side effects	-
+*/
+
+void sendto_all_linkedbots(buffer)
+char *buffer;
+{
+  int i;
+
+  for( i = 1; i< maxconns; i++)
+    {
+      if(connections[i].socket != INVALID)
+	{
+	  if(connections[i].type & TYPE_BOT)
+	    {
+	      /*
+		Don't send something back to a bot it originated from
+	       */
+
+	      if ( i != incoming_connnum )
+		{
+		  prnt(connections[i].socket,buffer);
+		}
+	    }
+	}
+    }
+}
+
+/*
+type_show()
+
+inputs		- int type
+output		- pointer to a static char * showing the char types
+side effects	-
+*/
+char *type_show(type)
+int type;
+{
+static char type_string[SMALL_BUFF];
+char *p;
+
+  p = type_string;
+  if(type&TYPE_OPER)*p++ = 'O';
+  if(type&TYPE_REGISTERED)*p++ = 'K';
+  if(type&TYPE_GLINE)*p++ = 'G';
+  if(type&TYPE_BOT)*p++ = 'B';
+  *p = '\0';
+  return(type_string);
+}
+
+/*
+setup_allow()
+
+input		- nick to allow
+output		- NONE
+side effects	- nick is added to botnick allow list
+*/
+
+void setup_allow(nick)
+char *nick;
+{
+  char botnick[MAX_NICK+4];	/* Allow room for '<' and '>' */
+  char *p;
+  int i=0;
+  int remove_allow = NO;
+  int first_free = -1;
+
+  while(*nick==' ')
+    nick++;
+
+  if(*nick == '-')
+    {
+      remove_allow = YES;
+      nick++;
+    }
+
+  botnick[i++] = '<';
+  while(*nick)
+    {
+      if(*nick == ' ')
+	break;
+      if(i >= MAX_NICK+1)
+	break;
+      botnick[i++] = *nick++;
+    }
+
+  botnick[i++] = '>';
+  botnick[i] = '\0';
+
+  first_free = -1;
+
+  for( i = 0; i < MAX_ALLOW_SIZE ; i++ )
+    {
+      if( allow_nick[i][0] == '\0' )
+	allow_nick[i][0] = '-';
+
+      if( (allow_nick[i][0] == '-') && (first_free < 0))
+	{
+	  first_free = i;
+	}
+
+      if(strcasecmp(allow_nick[i],botnick) == 0)
+	{
+	  if(remove_allow)	/* make it so it no longer matches */
+	    allow_nick[i][0] = '-';
+	  return;
+	}
+    }
+  /* Not found insert if room */
+  if(first_free >= 0)
+    {
+      strcpy(allow_nick[first_free],botnick);
+    }
+  /* whoops. if first_free < 0 then.. I'll just ignore with nothing said */
+}
+
+/*
+init_allow_nick()
+
+inputs		- NONE
+output		- NONE
+side effects	- The allow nick table is cleared out.
+*/
+
+void init_allow_nick()
+{
+  int i;
+  for(i=0;i<MAX_ALLOW_SIZE;i++)
+    {
+      allow_nick[i][0] = '-';
+      allow_nick[i][1] = '\0';
+    }
+}
+
+/*
+test_ignore()
+
+inputs		- input from link
+output		- YES if not to ignore NO if to ignore
+side effects	- NONE
+*/
+
+int test_ignore(line)
+char *line;
+{
+  char botnick[MAX_NICK+4];	/* Allow room for '<' and '>' */
+  char *p;
+  int i;
+
+  if(line[0] != '<')
+    return(NO);
+
+  for(i=0;i<MAX_NICK+3;)
+    {
+      if(*line == '@@')return(NO);	/* Not even just a botnick */
+      botnick[i++] = *line++;
+      if(*line == '>')
+	break;
+    }
+  botnick[i++] = '>';
+  botnick[i] = '\0';
+
+
+  for(i=0;i<MAX_ALLOW_SIZE;i++)
+    {
+      if(strcasecmp(allow_nick[i],botnick) == 0)
+	return(NO);
+    }
+  return(YES);
+}
+
+@
+
+
+1.31
+log
+@anti loop code, bug fixes
+@
+text
+@d33 1
+a33 1
+*   int  already_have_tcm - Dianora
+d70 1
+a70 1
+static char *version="$Id: serverif.c,v 1.30 1997/05/21 00:54:15 db Exp db $";
+d78 1
+a82 1
+
+d122 4
+a125 4
+char to_nick[MAX_NICK+1];
+char to_tcm[MAX_NICK+1];
+char from_nick[MAX_NICK+1];
+char from_tcm[MAX_NICK+1];
+d128 8
+a135 3
+ 
+void send_to_nick();		/* - Dianora */
+void prnt();			/* - Hendrix */
+d143 3
+a145 2
+void gracefuldie();		
+void linkclosed();
+d147 3
+a149 3
+void closeconn();
+void dccproc();			/* Hendrix, much modified now */
+void proc();
+d151 2
+a152 1
+void reload_user_list();	/* - Dianora */
+d155 4
+a158 4
+void on_services_notice();	/* - Dianora */
+void on_ca_services_notice();	/* - chris/Dianora */
+void connect_remote_tcm();	/* - Dianora */
+void init_remote_tcm_listen();	/* - Dianora */
+d162 2
+a163 1
+int  add_connection();		/* - Dianora */
+d166 1
+a166 1
+int  already_have_tcm();	/* - Dianora */
+d197 1
+a197 2
+int bindsocket(hostport)
+char *hostport;
+d263 1
+a263 1
+#if defined(LINUX) || defined(FREEBSD) || defined(BSDI) || defined(SOLARIS) || defined(GNUWIN32) || defined(AIX)
+d309 1
+a309 3
+void prnt(sock, msg)
+int sock;
+char *msg;
+d347 1
+a347 3
+void send_to_nick(to_nick,buffer)
+char *to_nick;
+char *buffer;
+d372 1
+a372 2
+void toserv(msg)
+char *msg;
+d395 1
+a395 3
+void sendtoalldcc(msg,type)
+char *msg;
+int type;
+d493 1
+a493 1
+void rdpt()
+d588 1
+a588 1
+void check_services()
+d618 1
+a618 2
+void on_services_notice(body)
+char *body;
+d666 1
+d669 7
+a675 1
+	  user = strtok(userathost,"@@");
+d690 1
+d701 2
+d735 1
+a735 2
+void on_ca_services_notice(body)
+char *body;
+d848 1
+a848 1
+  *source = *body = *fctn = 0;
+d909 1
+a909 3
+void pong(sock,hst)
+int sock;
+char *hst;
+d962 1
+a962 3
+char makeconn(hostport,nick,userhost)
+char *hostport;
+char *nick,*userhost;
+d988 1
+a988 1
+      gracefuldie();
+d1054 1
+a1054 3
+int add_connection(socket,bot_entry)
+int socket;
+int bot_entry;
+d1074 1
+a1074 1
+      gracefuldie();
+d1097 1
+a1097 2
+void closeconn(connnum)
+int connnum;
+d1149 1
+a1149 2
+void dccproc(connnum)
+int connnum;
+d1409 1
+a1409 1
+  param3 = strtok((char *)NULL," ");
+d1491 2
+d1593 2
+a1594 2
+	      (void)sprintf(dccbuff,"killlist %s",
+			    who_did_command);
+d1635 6
+d1670 19
+a1688 50
+      {
+	char cmd[MAX_BUFF];
+	time_t current_time;
+	struct tm *broken_up_time;
+	char *pattern;	/* u@@h or nick */
+	char *reason;	/* reason to use */
+	
+	current_time = time((time_t *)NULL);
+	broken_up_time = localtime(&current_time);
+
+	if( connections[connnum].type & TYPE_REGISTERED )
+	  {
+	    if(param2)
+	      {
+		pattern = param2;
+		if(pattern)
+		  {
+		    reason = param3;
+		    if( reason )
+		      {
+			/* Removed *@@ prefix from kline parameter -tlj */
+			sprintf(dccbuff,"kline %s : %s added by oper %s",
+				pattern,reason,
+				who_did_command);
+			sendtoalldcc(dccbuff,SEND_OPERS_ONLY);
+
+			sprintf(cmd,"KLINE %s :%s by %s %02d/%02d/%02d\n",
+				pattern,reason,
+				who_did_command,
+				(broken_up_time->tm_mon)+1,
+				broken_up_time->tm_mday,
+				broken_up_time->tm_year);
+			toserv(cmd);
+		      }
+		    else
+		      {
+			prnt(connections[connnum].socket,
+			     "missing reason \"kline [nick]|[user@@host] reason\"\n");
+		      }
+		  }
+		else
+		  {
+		    prnt(connections[connnum].socket,
+			 "missing nick/user@@host \".kline [nick]|[user@@host] reason\"\n");
+		  }
+	      }
+	  }
+	else
+	  prnt(connections[connnum].socket,"You aren't registered\n");
+      }
+d1693 12
+a1704 39
+      {
+	char cmd[MAX_BUFF];
+	time_t current_time;
+	struct tm *broken_up_time;
+	char *pattern;	/* u@@h or nick */
+	
+	current_time = time((time_t *)NULL);
+	broken_up_time = localtime(&current_time);
+	
+	if( connections[connnum].type & TYPE_REGISTERED )
+	  {
+	    if(param2)
+	      {
+		pattern = param2;
+		if(pattern)
+		  {
+		    sprintf(dccbuff,"kclone %s : added by oper %s",
+			    pattern,
+			    who_did_command);
+		    sendtoalldcc(dccbuff,SEND_OPERS_ONLY);
+		    sprintf(cmd,
+			    "KLINE %s :Clones are prohibited [%s %02d/%02d/%02d]\n",
+			    pattern,
+			    who_did_command,
+			    (broken_up_time->tm_mon)+1,
+			    broken_up_time->tm_mday,
+			    broken_up_time->tm_year);
+		    toserv(cmd);
+		  }
+		else
+		  {
+		    prnt(connections[connnum].socket,
+			 "missing nick/user@@host \".kclone [nick]|[user@@host]\"\n");
+		  }
+	      }
+	  }
+	else
+	  prnt(connections[connnum].socket,"You aren't registered\n");
+      }
+d1709 12
+a1720 38
+      {
+	char cmd[MAX_BUFF];
+	time_t current_time;
+	struct tm *broken_up_time;
+	char *pattern;	/* u@@h or nick */
+	
+	current_time = time((time_t *)NULL);
+	broken_up_time = localtime(&current_time);
+	
+	if( connections[connnum].type & TYPE_REGISTERED )
+	  {
+	    if(param2)
+	      {
+		pattern = param2;
+		if(pattern)
+		  {
+		    sprintf(dccbuff,"kflood %s : added by oper %s",
+			    pattern,
+			    who_did_command);
+		    sendtoalldcc(dccbuff,SEND_OPERS_ONLY);
+		    sprintf(cmd,"KLINE %s :Flooding [%s %02d/%02d/%02d]\n",
+			    pattern,
+			    who_did_command,
+			    (broken_up_time->tm_mon)+1,
+			    broken_up_time->tm_mday,
+			    broken_up_time->tm_year);
+		    toserv(cmd);
+		  }
+		else
+		  {
+		    prnt(connections[connnum].socket,
+			 "missing nick/user@@host \".kflood [nick]|[user@@host]\"\n");
+		  }
+	      }
+	  }
+	else
+	  prnt(connections[connnum].socket,"You aren't registered\n");
+      }
+d1724 11
+a1734 38
+      {
+	char cmd[MAX_BUFF];
+	time_t current_time;
+	struct tm *broken_up_time;
+	char *pattern;  /* u@@h or nick */
+  
+	current_time = time((time_t *)NULL);
+	broken_up_time = localtime(&current_time);
+  
+	if( connections[connnum].type & TYPE_REGISTERED )
+	  {
+	    if(param2)
+	      {
+		pattern = param2;
+		if(pattern)
+		  {
+		    sprintf(dccbuff,"kperm %s : added by oper %s",
+			    pattern,
+			    connections[connnum].nick);
+		    sendtoalldcc(dccbuff,SEND_OPERS_ONLY);
+		    sprintf(cmd,"KLINE %s :PERMANENT [%s %02d/%02d/%02d]\n",
+			    pattern,
+			    who_did_command,
+			    (broken_up_time->tm_mon)+1,
+			    broken_up_time->tm_mday,
+			    broken_up_time->tm_year);
+		    toserv(cmd);
+		  }
+		else
+		  {
+		    prnt(connections[connnum].socket,
+			 "missing nick/user@@host \".kperm [nick]|[user@@host]\"\n");
+		  }
+	      }
+	  }
+	else
+	  prnt(connections[connnum].socket,"You aren't registered\n");
+      }
+d1738 12
+a1749 39
+      {
+        char cmd[MAX_BUFF];
+        time_t current_time;
+        struct tm *broken_up_time;
+        char *pattern;  /* u@@h or nick */
+
+        current_time = time((time_t *)NULL);
+        broken_up_time = localtime(&current_time);
+ 
+        if( connections[connnum].type & TYPE_REGISTERED )
+          {
+            if(param2)
+              {
+                pattern = param2;
+                if(pattern)
+                  {
+                    sprintf(dccbuff,"kbot %s : added by oper %s",
+                        pattern,
+                        who_did_command);
+                    sendtoalldcc(dccbuff,SEND_OPERS_ONLY);
+                    sprintf(cmd,
+			 "KLINE %s :Bots are prohibited [%s %02d/%02d/%02d]\n",
+                        pattern,
+                        who_did_command,
+                        (broken_up_time->tm_mon)+1,
+                        broken_up_time->tm_mday,
+                        broken_up_time->tm_year);
+                    toserv(cmd);
+                  }
+                else
+                  {
+                    prnt(connections[connnum].socket,
+                  "missing nick/user@@host \".kbot [nick]|[user@@host]\"\n");
+                  }
+              }
+          }
+	else
+	  prnt(connections[connnum].socket,"You aren't registered\n");
+      }
+d1755 2
+d1761 3
+d1773 6
+d1979 1
+d1988 2
+a1989 1
+	if(param3)
+d1991 1
+a1991 1
+	    printf("linking [%s]\n", param3);
+d2005 1
+a2005 1
+			   dfltnick,param2,param3,tcmnick);
+d2011 1
+a2011 1
+			    param3);
+d2265 4
+d2276 61
+d2338 4
+d2343 1
+a2343 2
+int already_have_tcm(tcmnick)
+char *tcmnick;
+d2388 1
+a2388 2
+void proc(source, fctn, param)
+char *source, *fctn, *param;
+d2511 1
+a2511 2
+void gracefuldie(sig)
+int sig;
+d2544 1
+a2544 1
+void reload_user_list()
+d2688 1
+a2688 1
+void initlog()
+d2753 32
+d2794 1
+a2794 1
+void init_remote_tcm_listen()
+d2832 1
+a2832 2
+void connect_remote_tcm(connnum)
+int connnum;
+@
+
+
+1.30
+log
+@checkpoint
+@
+text
+@d33 1
+d70 1
+a70 1
+static char *version="$Id: serverif.c,v 1.29 1997/05/17 23:16:13 db Exp db $";
+d158 1
+a158 1
+
+d217 1
+a217 1
+      return -1;
+d222 2
+a223 1
+  (void)setsockopt(plug,SOL_SOCKET,SO_REUSEADDR,&optval,sizeof(optval));
+d256 1
+a256 1
+#if defined(LINUX) || defined(FREEBSD) || defined(BSDI) || defined(SOLARIS) || defined(GNUWIN32)
+d268 1
+a268 1
+	  return -1;
+d282 1
+a282 1
+	return -1;
+d372 1
+a372 1
+  if (connections[0].socket != -1)
+d504 1
+a504 1
+	if (connections[i].socket != -1)
+d548 1
+a548 1
+			  == BUFFERSIZE-1)
+d625 1
+d681 16
+d703 2
+d706 7
+d762 1
+d776 1
+d939 1
+a939 1
+      if (connections[0].socket == -1)
+a1151 1
+  char *hold;
+d1226 1
+d1282 1
+d1330 3
+a1332 1
+  
+d1336 8
+a1343 1
+      if(connections[connnum].type & TYPE_REGISTERED)
+d1345 7
+a1351 3
+	  strcat(buffer,"\n");
+	  sendto_all_linkedbots(buffer);
+	  toserv(buffer+1);
+a1352 1
+      return;
+d1355 2
+d1445 2
+d1489 2
+d1583 6
+a1588 2
+	    prnt(connections[connnum].socket,
+		 "Usage: .killlist <wildcarded userhost>\n");
+d1590 6
+a1595 1
+	    kill_list_users(connections[connnum].socket,param2);
+d1631 1
+a1631 1
+
+d1633 1
+a1633 1
+
+d1646 1
+a1646 1
+			"missing reason \"kline [nick]|[user@@host] reason\"\n");
+d1942 2
+d1952 1
+d2048 2
+d2058 22
+d2091 46
+d2231 1
+a2231 1
+	  if (connections[i].socket != -1)
+d2256 2
+a2257 2
+		  if (connections[i].socket != -1 &&
+		      !strcasecmp(hold+1,connections[i].nick))
+d2389 29
+d2537 1
+a2537 1
+            GettingCASVCSReports = 1;
+d2544 1
+a2544 1
+          GettingCASVCSReports = 0;
+@
+
+
+1.29
+log
+@checkpoint. partially rewritten parser, still need hash table
+based token lookup
+@
+text
+@d2 1
+a2 1
+* MrsBot (used in tcm) by Hendrix <jimi@@texas.net>                        *
+d69 1
+a69 1
+static char *version="$Id: serverif.c,v 1.28 1997/05/12 01:47:36 db Exp db $";
+d201 1
+d219 3
+d398 1
+d431 4
+a434 1
+	(void)sprintf(bot_buff,"<%s> %s\n",dfltnick,msg);
+d468 9
+a476 1
+		    prnt(connections[i].socket, buff);
+d732 2
+a733 1
+	if (strcasecmp("Nickflood",parm1) == 0) {
+d735 4
+a738 1
+		sprintf(dccbuff, "KILL %s :CaSvcs-Reported Nick Flooding\r\n", parm3);
+d740 3
+a742 1
+		sprintf(dccbuff, "AutoKilled %s %s for CaSvcs-Reported Nick Flooding", parm3, parm4);
+d744 10
+a753 1
+#endif	
+d1285 12
+a1296 1
+	sendtoalldcc(dccbuff,opers_only); /* Thanks Garfr, Talen - Dianora */
+d1372 2
+d1375 1
+d1440 2
+d2232 23
+a2254 5
+    
+      default:
+	prnt(connections[connnum].socket,"Unknown command\n");
+	break;
+      }
+@
+
+
+1.28
+log
+@added chris's ca services code, cleaned up link looking code
+@
+text
+@d69 1
+a69 1
+static char *version="$Id: serverif.c,v 1.27 1997/05/03 16:29:34 db Exp db $";
+d1097 2
+d1221 1
+d1242 1
+a1242 1
+	  if( (connections[connnum].type & TYPE_BOT))
+a1271 5
+/*
+  This parser should be re-written using a hash table lookup
+  If someone doesn't beat me to it, I'll get around to doing it
+  - Dianora
+*/
+d1273 18
+a1290 5
+  if (!strncasecmp(buffer,"clones",6))
+    report_clones(connections[connnum].socket);
+  else if (!strncasecmp(buffer,"nflood",6))
+    report_nick_flooders(connections[connnum].socket);
+  else if(!strncasecmp(buffer,"rehash",6))
+d1292 116
+d1414 3
+a1416 3
+    }
+  else if(!strncasecmp(buffer,"trace",5))
+    {
+d1422 4
+a1425 5
+    }
+  else if (!strncasecmp(buffer,"failures",6))
+    {
+      hold = strchr(buffer,' ');
+      if (!hold)
+d1427 1
+a1427 1
+      else if (atoi(hold) < 1)
+d1430 5
+a1434 6
+	report_failures(connections[connnum].socket,atoi(hold));
+    }
+  else if (!strncasecmp(buffer,"domains",7))
+    {
+      hold = strchr(buffer,' ');
+      if (!hold)
+d1436 1
+a1436 1
+      else if (atoi(hold) < 1)
+d1439 20
+a1458 16
+        report_domains(connections[connnum].socket,atoi(hold));
+    }
+  else if (!strncasecmp(buffer,"checkversion",12))
+    if (connections[connnum].type & TYPE_OPER)
+      massversion(connections[connnum].socket);
+    else
+      prnt(connections[connnum].socket,
+	   "Only authorized opers may use this command\n");
+  else if (!strncasecmp(buffer,"multi",5) || !strncasecmp(buffer,"bots",4))
+    report_multi(connections[connnum].socket,2);
+  else if (!strncasecmp(buffer,"nfind",5))
+    if (connections[connnum].type & TYPE_OPER)
+      {
+        hold = strchr(buffer,' ');
+        if (!hold)
+          prnt(connections[connnum].socket,
+d1460 36
+a1495 35
+        else
+          list_nicks(connections[connnum].socket,hold+1);
+      }
+    else
+      prnt(connections[connnum].socket,
+	   "Only authorized opers may use this command\n");
+  else if (!strncasecmp(buffer,"list",4))
+    if (connections[connnum].type & TYPE_OPER)
+      {
+        hold = strchr(buffer,' ');
+        if (!hold)
+          prnt(connections[connnum].socket,
+	       "Usage: .list <wildcarded userhost>\n");
+        else
+          list_users(connections[connnum].socket,hold+1);
+      }
+    else
+      prnt(connections[connnum].socket,
+	   "Only authorized opers may use this command\n");
+/* - Phisher */
+  else
+    if (!strncasecmp(buffer,"killlist",8))
+      {
+	if (connections[connnum].type & TYPE_REGISTERED)
+	  {
+	    hold = strchr(buffer,' ');
+	    if (!hold)
+	      prnt(connections[connnum].socket,
+		   "Usage: .killlist <wildcarded userhost>\n");
+	    else
+	      kill_list_users(connections[connnum].socket,hold+1);
+	  }
+	else
+	  prnt(connections[connnum].socket,"You aren't registered\n");
+      }
+d1498 2
+a1499 1
+    else if (!strncasecmp(buffer,"gline",5))
+d1512 1
+a1512 2
+	    hold = strchr(buffer,' ');
+	    if(hold)
+d1514 1
+a1514 1
+		pattern = strtok(hold," ");
+d1517 1
+a1517 1
+		    reason = strtok((char *)NULL,"");
+d1520 1
+a1520 1
+	/* Removed *@@ prefix from kline parameter -tlj */
+a1528 1
+
+d1547 1
+a1547 1
+                "missing nick/user@@host \".kline [nick]|[user@@host] reason\"\n");
+d1554 3
+a1556 1
+    else if (!strncasecmp(buffer,"kline",5))
+d1563 1
+a1563 1
+
+d1569 1
+a1569 2
+	    hold = strchr(buffer,' ');
+	    if(hold)
+d1571 1
+a1571 1
+		pattern = strtok(hold," ");
+d1574 1
+a1574 1
+		    reason = strtok((char *)NULL,"");
+d1577 1
+a1577 1
+	/* Removed *@@ prefix from kline parameter -tlj */
+d1594 1
+a1594 1
+			"missing reason \"kline [nick]|[user@@host] reason\"\n");
+d1600 1
+a1600 1
+                "missing nick/user@@host \".kline [nick]|[user@@host] reason\"\n");
+d1607 2
+d1610 1
+a1610 1
+    else if (!strncasecmp(buffer,"kclone",6))
+d1616 1
+a1616 1
+
+d1619 1
+a1619 1
+
+d1622 1
+a1622 2
+	    hold = strchr(buffer,' ');
+	    if(hold)
+d1624 1
+a1624 1
+		pattern = strtok(hold," ");
+d1628 2
+a1629 2
+			pattern,
+			who_did_command);
+d1632 6
+a1637 6
+		      "KLINE %s :Clones are prohibited [%s %02d/%02d/%02d]\n",
+			pattern,
+			who_did_command,
+			(broken_up_time->tm_mon)+1,
+			broken_up_time->tm_mday,
+			broken_up_time->tm_year);
+d1643 1
+a1643 1
+                  "missing nick/user@@host \".kclone [nick]|[user@@host]\"\n");
+d1650 2
+d1653 1
+a1653 1
+    else if (!strncasecmp(buffer,"kflood",6))
+d1659 1
+a1659 1
+
+d1662 1
+a1662 1
+
+d1665 1
+a1665 2
+	    hold = strchr(buffer,' ');
+	    if(hold)
+d1667 1
+a1667 1
+		pattern = strtok(hold," ");
+d1671 2
+a1672 2
+			pattern,
+			who_did_command);
+d1675 5
+a1679 5
+			pattern,
+			who_did_command,
+			(broken_up_time->tm_mon)+1,
+			broken_up_time->tm_mday,
+			broken_up_time->tm_year);
+d1685 1
+a1685 1
+                  "missing nick/user@@host \".kflood [nick]|[user@@host]\"\n");
+d1692 3
+a1694 1
+    else if (!strncasecmp(buffer,"kperm",5))
+d1706 1
+a1706 2
+	    hold = strchr(buffer,' ');
+	    if(hold)
+d1708 1
+a1708 1
+		pattern = strtok(hold," ");
+d1733 3
+a1735 1
+    else if (!strncasecmp(buffer,"kbot",4))
+d1747 1
+a1747 2
+            hold = strchr(buffer,' ');
+            if(hold)
+d1749 1
+a1749 1
+                pattern = strtok(hold," ");
+d1775 3
+a1777 1
+    else if (!strncasecmp(buffer,"kill",4))
+d1786 1
+a1786 2
+	    hold = strchr(buffer,' ');
+	    if(hold)
+d1788 2
+a1789 2
+		pattern = strtok(hold," ");
+		reason = strtok((char *)NULL,"");
+d1815 4
+a1818 1
+    else if (!strncasecmp(buffer,"register",8))
+a1825 1
+            hold = strchr(buffer,' ');
+d1827 1
+a1827 1
+            if(hold)
+d1829 1
+a1829 1
+                password = strtok(hold," ");
+d1858 3
+a1860 2
+#endif
+    else if (!strncasecmp(buffer,"opers",5))
+d1883 3
+a1885 1
+    else if (!strncasecmp(buffer,"tcmlist",7))
+d1899 3
+a1901 1
+    else if (!strncasecmp(buffer,"tcmconn",7))
+a1908 1
+	    hold = strchr(buffer,' ');
+d1911 2
+a1912 5
+	    if(hold)
+	      {
+		hold++;
+		match = YES;
+	      }
+d1921 1
+a1921 1
+		if(match && (strcasecmp(botlist[i].theirnick, hold) != 0))
+d1957 3
+a1959 2
+    else if (!strncasecmp(buffer,"allow",5))
+      {
+d1961 1
+a1961 1
+	if (connections[connnum].type & TYPE_REGISTERED)
+d1963 1
+a1963 1
+	  if (connections[connnum].type & TYPE_OPER)
+d1965 5
+d1971 8
+a1978 8
+	      int i;
+	      int found_one;
+
+	      hold = strchr(buffer,' ');
+	      if(hold)
+		{
+		  while(*hold == ' ')
+		    hold++;
+d1980 6
+a1985 13
+		  if(*hold == '-')
+		    (void)sprintf(dccbuff,"allow of %s turned off by %s",
+				  hold+1,
+				  who_did_command);
+		  else
+		    (void)sprintf(dccbuff,"allow of %s turned on by %s",
+				  hold,
+				  who_did_command);
+		
+		  sendtoalldcc(dccbuff,SEND_OPERS_ONLY);
+		  setup_allow(hold);
+		}
+	      else
+d1987 1
+a1987 12
+		  for(i = 0; i < MAX_ALLOW_SIZE; i++ )
+		    {
+		      if(allow_nick[i][0] != '-')
+			{
+			  found_one = YES;
+			  (void)sprintf(dccbuff,
+					"allowed: %s\n",allow_nick[i]);
+			  prnt(connections[connnum].socket,dccbuff);
+			}
+		    }
+
+		  if(!found_one)
+d1989 1
+d1991 1
+a1991 1
+				    "There are no tcm allows in place\n");
+d1995 7
+d2003 3
+a2005 2
+	  else
+	    {
+d2007 1
+a2007 1
+	      prnt(connections[connnum].socket,"You aren't registered\n");
+d2009 2
+a2010 2
+	      prnt(connections[connnum].socket,
+		   "Only authorized opers may use this command.\n");
+d2012 3
+a2014 2
+	    }
+      }
+d2016 3
+a2018 4
+    else if (!strncasecmp(buffer,"autopilot",9))
+      {
+	hold = strchr(buffer,' ');
+	if (!hold)
+d2029 1
+a2029 2
+		hold++;
+		if( !strncasecmp(hold,"ON",2))
+d2036 1
+a2036 1
+		else if( !strncasecmp(hold,"OFF",3))
+d2048 1
+a2048 1
+      }
+d2050 15
+a2064 14
+  else if (!strncasecmp(buffer,"connections",11))
+    {
+      for (i=1;i<maxconns;++i)
+        if (connections[i].socket != -1)
+	  {
+	    sprintf(dccbuff,"%s %s (%s) is connected\n",
+		    connections[i].nick,
+		    type_show(connections[i].type),
+		    connections[i].userhost
+		    );
+	    prnt(connections[connnum].socket,dccbuff);
+          }
+    }
+  else if (!strncasecmp(buffer,"disconnect",10))
+d2066 1
+a2066 1
+    if (connections[connnum].type & TYPE_REGISTERED)
+d2068 1
+a2068 1
+      if (connections[connnum].type & TYPE_OPER)
+d2070 6
+a2075 7
+	{
+	  hold = strchr(buffer,' ');
+	  if (!hold)
+	    prnt(connections[connnum].socket,"Usage: disconnect <nickname>\n");
+	  else
+	    {
+	      char *type;
+d2077 22
+a2098 22
+	      for (i=1;i<maxconns;++i)
+		if (connections[i].socket != -1 &&
+		    !strcasecmp(hold+1,connections[i].nick)) {
+
+		  type = "user";
+		  if(connections[i].type & TYPE_OPER)
+		    type = "oper";
+		  if(connections[i].type & TYPE_BOT)
+		    type = "Bot";
+
+		  sprintf(dccbuff,"Disconnecting %s %s\n",
+			  type,
+			  connections[i].nick);
+		  prnt(connections[connnum].socket,dccbuff);
+		  sprintf(dccbuff,"You have been disconnected by oper %s\n",
+			  who_did_command);
+		  prnt(connections[i].socket,dccbuff);
+		  closeconn(i);
+		}
+	    }
+        }
+      else
+d2100 1
+a2100 1
+	prnt(connections[connnum].socket,"You aren't registered\n");
+d2102 2
+a2103 2
+  prnt(connections[connnum].socket,
+       "Only authorized opers may use this command.\n");
+d2105 1
+d2107 3
+a2109 5
+    else if (!strncasecmp(buffer,"help",4))
+      {
+	hold = strchr(buffer,' ');
+	print_help(connections[connnum].socket, hold);
+      }
+d2111 1
+a2111 2
+    else if (!strncasecmp(buffer,"close",5))
+      {
+d2114 1
+a2114 1
+      }
+d2119 2
+a2120 2
+    else if (!strncasecmp(buffer,"op",2))
+      {
+d2122 1
+a2122 1
+	if (connections[connnum].type & TYPE_REGISTERED)
+d2124 1
+a2124 1
+	if (connections[connnum].type & TYPE_OPER)
+d2126 7
+a2132 8
+	  {
+	    hold = strchr(buffer,' ');
+	    if (!hold)
+	      prnt(connections[connnum].socket,"Usage: op [nick]\n");
+	    else
+	      op(defchannel,buffer); 
+	  }
+	else
+d2134 1
+a2134 1
+	  prnt(connections[connnum].socket,"You aren't registered\n");
+d2136 1
+a2136 1
+	  prnt(connections[connnum].socket,
+d2139 4
+a2142 2
+      }
+    else if (!strncasecmp(buffer,"cycle",5))
+d2162 4
+a2165 2
+     }
+    else if (!strncasecmp(buffer,"die",3))
+d2183 4
+a2186 3
+/* End of stuff added by ParaGod */
+    else 
+      {
+d2188 1
+d2909 1
+d2917 1
+d2925 1
+@
+
+
+1.27
+log
+@update of changes for OPERS_ONLY, fixed complaint found under digital unix
+@
+text
+@d69 1
+a69 1
+static char *version="$Id: serverif.c,v 1.26 1997/05/01 00:23:20 db Exp db $";
+d106 2
+d148 1
+d151 2
+a152 2
+void init_ignore_nick();	/* - Dianora */
+void setup_ignore();		/* - Dianora */
+d182 1
+a182 1
+char ignore_nick[MAX_IGNORE_SIZE][MAX_NICK+4];
+d319 1
+a319 1
+      printf("%s",msg);
+d355 8
+d367 1
+a367 1
+    prnt(connections[0].socket, msg);
+d587 2
+d675 91
+d1093 1
+d1104 1
+d1139 1
+d1212 6
+d1282 1
+a1282 1
+		    connections[connnum].nick);
+d1291 1
+a1291 1
+		    connections[connnum].nick);
+d1391 1
+a1391 1
+			sprintf(dccbuff,"gline %s : %s added by oper %s@@%s",
+d1393 1
+a1393 1
+				connections[connnum].nick,
+d1400 1
+a1400 1
+			sprintf(cmd+1,"KLINE %s :%s by %s@@%s %02d/%02d/%02d\n",
+d1402 1
+a1402 2
+				connections[connnum].nick,
+				dfltnick,
+d1450 1
+a1450 1
+				connections[connnum].nick);
+d1452 1
+d1455 1
+a1455 1
+				connections[connnum].nick,
+d1498 1
+a1498 1
+			connections[connnum].nick);
+d1503 1
+a1503 1
+			connections[connnum].nick,
+d1540 1
+a1540 1
+			connections[connnum].nick);
+d1544 1
+a1544 1
+			connections[connnum].nick,
+d1560 40
+d1620 1
+a1620 1
+                        connections[connnum].nick);
+d1625 1
+a1625 1
+                        connections[connnum].nick,
+d1660 1
+a1660 1
+			    connections[connnum].nick,
+d1666 1
+a1666 1
+			    connections[connnum].nick,
+d1701 1
+a1701 1
+					connections[connnum].nick);
+d1707 1
+a1707 1
+				      connections[connnum].nick);
+d1819 1
+a1819 1
+    else if (!strncasecmp(buffer,"ignore",6))
+d1827 3
+d1835 1
+a1835 1
+
+d1837 3
+a1839 3
+		    (void)sprintf(dccbuff,"ignore of %s turned off by %s",
+				hold+1,
+				connections[connnum].nick);
+d1841 1
+a1841 1
+		    (void)sprintf(dccbuff,"ignore of %s turned on by %s",
+d1843 17
+a1859 1
+				  connections[connnum].nick);
+d1861 6
+a1866 2
+		  sendtoalldcc(dccbuff,SEND_OPERS_ONLY);
+		  setup_ignore(hold);
+a1877 22
+
+      }
+    else if (!strncasecmp(buffer,"lignore",7))
+      {
+	int i;
+	int found_one = NO;
+
+	for(i = 0; i < MAX_IGNORE_SIZE; i++ )
+	  {
+	    if(ignore_nick[i][0] != '-')
+	      {
+		found_one = YES;
+		(void)sprintf(dccbuff,"ignored: %s\n",ignore_nick[i]);
+		prnt(connections[connnum].socket,dccbuff);
+	      }
+	  }
+
+	if(!found_one)
+	  {
+	    (void)sprintf(dccbuff,"There are no tcm ignores in place\n");
+	    prnt(connections[connnum].socket,dccbuff);
+	  }
+d1899 1
+a1899 1
+				  connections[connnum].nick);
+d1906 1
+a1906 1
+				  connections[connnum].nick);
+d1958 1
+a1958 1
+			  connections[connnum].nick);
+d2161 23
+d2351 1
+a2351 1
+  init_ignore_nick();
+d2669 1
+a2669 1
+setup_ignore()
+d2671 1
+a2671 1
+input		- nick to ignore
+d2673 1
+a2673 1
+side effects	- nick is added to botnick ignore list
+d2676 1
+a2676 1
+void setup_ignore(nick)
+d2682 1
+a2682 1
+  int remove_ignore = NO;
+d2690 1
+a2690 1
+      remove_ignore = YES;
+d2709 1
+a2709 1
+  for( i = 0; i < MAX_IGNORE_SIZE ; i++ )
+d2711 2
+a2712 2
+      if( ignore_nick[i][0] == '\0' )
+	ignore_nick[i][0] = '-';
+d2714 1
+a2714 1
+      if( (ignore_nick[i][0] == '-') && (first_free < 0))
+d2719 1
+a2719 1
+      if(strcasecmp(ignore_nick[i],botnick) == 0)
+d2721 2
+a2722 2
+	  if(remove_ignore)	/* make it so it no longer matches */
+	    ignore_nick[i][0] = '-';
+d2729 1
+a2729 1
+      strcpy(ignore_nick[first_free],botnick);
+d2735 1
+a2735 1
+init_ignore_nick()
+d2739 1
+a2739 1
+side effects	- The ignore nick table is cleared out.
+d2742 1
+a2742 1
+void init_ignore_nick()
+d2745 1
+a2745 1
+  for(i=0;i<MAX_IGNORE_SIZE;i++)
+d2747 2
+a2748 2
+      ignore_nick[i][0] = '-';
+      ignore_nick[i][1] = '\0';
+d2756 1
+a2756 1
+output		- YES if ignore NO if not to ignore
+d2779 1
+a2779 1
+  for(i=0;i<MAX_IGNORE_SIZE;i++)
+d2781 2
+a2782 2
+      if(strcasecmp(ignore_nick[i],botnick) == 0)
+	return(YES);
+d2784 1
+a2784 1
+  return(NO);
+@
+
+
+1.26
+log
+@blah. I collided old usage of OPERS_ONLY with new usage. duh
+@
+text
+@d69 1
+a69 1
+static char *version="$Id: serverif.c,v 1.25 1997/04/25 20:53:30 db Exp db $";
+d2347 1
+a2347 1
+	  gracefuldie();
+@
+
+
+1.25
+log
+@fixed KLINE with extra *, fixed gline propogation
+@
+text
+@d69 1
+a69 1
+static char *version="$Id: serverif.c,v 1.24 1997/04/25 05:58:41 db Exp db $";
+d438 1
+a438 1
+		case OPERS_ONLY:
+d445 1
+a445 1
+		case ALL_USERS:
+d629 1
+a629 1
+      sendtoalldcc(dccbuff,ALL_USERS);
+d818 1
+a818 1
+      sendtoalldcc("Ran out of memory in makeconn",ALL_USERS);
+d871 1
+a871 1
+  sendtoalldcc(dccbuff,ALL_USERS);
+d906 1
+a906 1
+      sendtoalldcc("Ran out of memory in add_connection",ALL_USERS);
+d974 1
+a974 1
+  sendtoalldcc(dccbuff,ALL_USERS);
+d990 1
+a990 1
+  int opers_only = ALL_USERS; 	/* Is it an oper only message ? */
+d1112 1
+a1112 1
+	  opers_only = OPERS_ONLY;
+d1170 1
+a1170 1
+      sendtoalldcc(dccbuff,ALL_USERS);
+d1179 1
+a1179 1
+      sendtoalldcc(dccbuff,OPERS_ONLY);
+d1282 1
+a1282 1
+			sendtoalldcc(dccbuff,OPERS_ONLY);
+d1339 1
+a1339 1
+			sendtoalldcc(dccbuff,OPERS_ONLY);
+d1386 1
+a1386 1
+		    sendtoalldcc(dccbuff,OPERS_ONLY);
+d1428 1
+a1428 1
+		    sendtoalldcc(dccbuff,OPERS_ONLY);
+d1468 1
+a1468 1
+                    sendtoalldcc(dccbuff,OPERS_ONLY);
+d1510 1
+a1510 1
+                    sendtoalldcc(dccbuff,OPERS_ONLY);
+d1549 1
+a1549 1
+			  sendtoalldcc(dccbuff,OPERS_ONLY);
+d1555 1
+a1555 1
+			sendtoalldcc(dccbuff,OPERS_ONLY);
+d1689 1
+a1689 1
+		  sendtoalldcc(dccbuff,OPERS_ONLY);
+d1746 1
+a1746 1
+		    sendtoalldcc(dccbuff,OPERS_ONLY);
+d1753 1
+a1753 1
+		    sendtoalldcc(dccbuff,OPERS_ONLY);
+d1864 1
+a1864 1
+	    sendtoalldcc("I'm cycling.  Be right back.", OPERS_ONLY);
+d1882 1
+a1882 1
+	       sendtoalldcc("I've been ordered to quit irc, goodbye.", ALL_USERS);
+d2065 1
+a2065 1
+  sendtoalldcc("*** Caught SIGHUP ***",ALL_USERS);
+d2346 1
+a2346 1
+	  sendtoalldcc("Ran out of memory in ",ALL_USERS);
+d2365 1
+a2365 1
+      sendtoalldcc(dccbuff,ALL_USERS);
+d2385 1
+a2385 1
+		  sendtoalldcc(dccbuff,ALL_USERS);
+d2396 1
+a2396 1
+		  sendtoalldcc(dccbuff,ALL_USERS);
+d2409 1
+a2409 1
+		      sendtoalldcc(dccbuff,ALL_USERS);
+d2417 1
+a2417 1
+		      sendtoalldcc(dccbuff,ALL_USERS);
+d2426 1
+a2426 1
+	      sendtoalldcc(dccbuff,ALL_USERS);
+@
+
+
+1.24
+log
+@remote : works
+@
+text
+@d41 1
+d69 1
+a69 1
+static char *version="$Id: serverif.c,v 1.23 1997/04/24 20:02:03 db Exp db $";
+d466 1
+d469 1
+d480 5
+a484 1
+      if( select (FD_SETSIZE, &readfds, &nullfds, &nullfds, NULL) > 0)
+d543 5
+d1147 1
+a1148 1
+	  strcat(buffer,"\n");
+d1340 1
+a1340 1
+			sprintf(cmd,"KLINE *%s :%s by %s %02d/%02d/%02d\n",
+@
+
+
+1.23
+log
+@checkpoint/ cleanedup .lignore command a bit
+@
+text
+@d68 1
+a68 1
+static char *version="$Id: serverif.c,v 1.22 1997/04/23 16:33:40 db Exp db $";
+d103 1
+d125 2
+a126 2
+void send_to_nick();
+void prnt();
+d156 1
+a156 1
+int quit = 0;              /* When it is 1, we quit almost immediately */
+a173 1
+extern char mychannel[MAX_CHANNEL];
+d296 1
+a296 3
+int  local_sock;
+int  i;
+char dccbuff[DCCBUFF_SIZE];
+d300 2
+d308 3
+a310 1
+      sendto_all_linkedbots(msg);
+d323 9
+d337 4
+d346 1
+a346 1
+	  send(connections[i].socket, buffer, strlen(buffer), 0);
+a546 1
+
+d557 5
+d988 5
+a1000 2
+printf("DEBUG: found ':'\n");
+
+a1004 2
+printf("DEBUG: TYPE_BOT buffer = [%s]\n", buffer);
+
+a1019 5
+printf("DEBUG: its BOT to_nick = [%s] to_tcm = [%s]\n", to_nick, to_tcm);
+	  
+	  if(strcasecmp(to_tcm,dfltnick) != 0 )
+	    return;	/* Not for us anyway */
+
+a1026 1
+	  printf("DEBUG: its BOT from_nick = [%s] from_tcm = [%s]\n", from_nick, from_tcm);
+a1088 2
+printf("dccbuff=[%s]\n",dccbuff);
+
+d1947 1
+a1947 1
+	    quit = 1;
+@
+
+
+1.22
+log
+@added .ignore .lignore
+@
+text
+@d68 1
+a68 1
+static char *version="$Id: serverif.c,v 1.21 1997/04/14 17:07:06 db Exp db $";
+d112 11
+d124 2
+d283 8
+d296 19
+a314 2
+  send(sock, msg, strlen(msg), 0);
+  printf(msg);
+d316 2
+a317 2
+  (void)printf("%s",msg);	/* - zaph */
+  (void)fprintf(outfile,"%s",msg);
+d321 15
+d962 120
+d1084 1
+a1084 1
+    {
+d1093 1
+a1093 1
+	    else
+d1102 10
+a1111 10
+	if( (connections[connnum].type & TYPE_BOT))
+	  {
+	    ignore_bot = test_ignore(buffer);
+	    strncpy(dccbuff,buffer,MAX_BUFF);
+	  }
+	else
+	  {
+	    (void)sprintf(dccbuff,"<%s@@%s> %s",
+			  connections[connnum].nick,dfltnick,buffer);
+	  }
+d1117 3
+a1119 2
+
+  if(connections[connnum].type & TYPE_BOT)
+d1132 6
+d1653 6
+a1658 2
+		  (void)sprintf(dccbuff,"ignore of %s turned on by %s",
+				hold,
+d1660 5
+d1683 1
+d1689 1
+d1693 6
+@
+
+
+1.21
+log
+@checkpoint
+@
+text
+@d2 1
+a2 1
+* MrsBot by Hendrix <jimi@@texas.net>                        *
+d68 1
+a68 1
+static char *version="$Id: serverif.c,v 1.20 1997/04/03 21:10:24 db Exp db $";
+d80 1
+a85 1
+
+a86 1
+
+d88 1
+d105 7
+a111 4
+char serverhost[MAX_HOST];    /* Server MrsBot will use. Defaults to SERV. */
+char defchannel[MAX_CHANNEL]; /* Channel MrsBot will use. */
+char dfltnick[MAX_NICK];      /* Nickname MrsBot will use. */
+int  incoming_connnum;
+d120 1
+a120 1
+void gracefuldie();
+d124 1
+a124 1
+void dccproc();
+d133 2
+d137 1
+d140 1
+a140 1
+char mynick[MAX_NICK];     /* MrsBot's current nickname */
+d165 2
+d294 1
+a294 1
+		- flag if message is to be sent only to opers YES/NO
+d297 1
+a297 1
+		  users, or to only opers on /dcc links
+d300 5
+d307 1
+a307 1
+void sendtoalldcc(msg,opers_only)
+d309 1
+a309 1
+int opers_only;
+d312 1
+d315 39
+a353 2
+  strcpy(buff,msg);
+  strcat(buff,"\n");
+d367 1
+a367 1
+	      if(opers_only)
+d369 11
+a379 1
+		  if(connections[i].type & TYPE_OPER)
+d381 4
+a385 2
+	      else
+		prnt(connections[i].socket, buff);
+d545 1
+a545 1
+      sendtoalldcc(dccbuff,NO);
+d624 1
+a624 1
+**     variable holding MrsBot's current nickname.
+d734 1
+a734 1
+      sendtoalldcc("Ran out of memory in makeconn",NO);
+d787 1
+a787 1
+  sendtoalldcc(dccbuff,NO);
+d822 1
+a822 1
+      sendtoalldcc("Ran out of memory in add_connection",NO);
+d890 1
+a890 1
+  sendtoalldcc(dccbuff,NO);
+d903 2
+a904 1
+  char *hold,dccbuff[MAX_BUFF];
+d906 2
+a907 1
+  int opers_only; 	/* Is it an oper only message ? */
+a911 2
+      opers_only = NO;
+
+d915 11
+a925 6
+	  buffer += 2;
+	  opers_only = YES;
+	  if((connections[connnum].type & TYPE_BOT))
+	    strcpy(dccbuff,"O:-");
+	  else
+	    strcpy(dccbuff,"O:<");
+d929 10
+a938 4
+	  if((connections[connnum].type & TYPE_BOT))
+	    strcpy(dccbuff,"-");
+	  else
+	    strcpy(dccbuff,"<");
+d940 2
+a941 9
+      strcat(dccbuff,connections[connnum].nick);
+
+      if(connections[connnum].type & TYPE_BOT)
+	strcat(dccbuff,"- ");
+      else
+	strcat(dccbuff,"> ");
+
+      strcat(dccbuff,buffer);
+      sendtoalldcc(dccbuff,opers_only); /* Thanks Garfr, Talen - Dianora */
+a944 2
+  buffer++;	/* skip the '.' */
+
+d949 1
+d951 1
+a951 1
+	  toserv(buffer);
+d956 2
+d966 1
+a966 1
+      sendtoalldcc(dccbuff,YES);
+d975 1
+a975 1
+      sendtoalldcc(dccbuff,YES);
+d1078 1
+a1078 1
+			sendtoalldcc(dccbuff,YES);
+d1081 3
+a1083 1
+			sprintf(cmd+1,"KLINE *%s :%s by %s@@%s %02d/%02d/%02d\n",
+d1135 1
+a1135 1
+			sendtoalldcc(dccbuff,YES);
+d1182 1
+a1182 1
+		    sendtoalldcc(dccbuff,YES);
+d1224 1
+a1224 1
+		    sendtoalldcc(dccbuff,YES);
+d1264 1
+a1264 1
+                    sendtoalldcc(dccbuff,YES);
+d1306 1
+a1306 1
+                    sendtoalldcc(dccbuff,YES);
+d1345 1
+a1345 1
+			  sendtoalldcc(dccbuff,YES);
+d1351 1
+a1351 1
+			sendtoalldcc(dccbuff,YES);
+d1396 3
+a1398 2
+	    strncpy(dccbuff,botlist[i].userathost,MAX_HOST-1);
+	    strcat(dccbuff,"\n");
+d1462 42
+d1525 1
+a1525 1
+		    sendtoalldcc(dccbuff,YES);
+d1532 1
+a1532 1
+		    sendtoalldcc(dccbuff,YES);
+d1598 4
+a1601 1
+      print_help(connections[connnum].socket);
+d1643 1
+a1643 1
+	    sendtoalldcc("I'm cycling.  Be right back.", YES);
+d1661 1
+a1661 1
+	       sendtoalldcc("I've been ordered to quit irc, goodbye.", YES);
+d1844 1
+a1844 1
+  sendtoalldcc("*** Caught SIGHUP ***",NO);
+d1862 1
+a1862 1
+**     bots.  Attach MrsBot to the server, sign her on to IRC, join her up
+d1864 1
+a1864 1
+**     until MrsBot is told to quit, is killed, or gives up reconnecting.
+d1953 1
+d2125 1
+a2125 1
+	  sendtoalldcc("Ran out of memory in ",NO);
+d2144 1
+a2144 1
+      sendtoalldcc(dccbuff,NO);
+d2164 1
+a2164 1
+		  sendtoalldcc(dccbuff,NO);
+d2175 1
+a2175 1
+		  sendtoalldcc(dccbuff,NO);
+d2188 1
+a2188 1
+		      sendtoalldcc(dccbuff,NO);
+d2196 1
+a2196 1
+		      sendtoalldcc(dccbuff,NO);
+d2205 1
+a2205 1
+	      sendtoalldcc(dccbuff,NO);
+d2270 118
+@
+
+
+1.20
+log
+@glines added
+@
+text
+@d21 6
+d68 1
+a68 1
+static char *version="$Id: serverif.c,v 1.19 1997/04/02 20:16:55 db Exp db $";
+d80 14
+a93 4
+extern void init_nick_change_table();
+extern void report_nick_flooders();
+extern void initopers();
+extern void on_stats_o();
+d102 7
+d110 7
+d132 1
+a144 9
+/*
+  These should all be in a CONFIG struct - Dianora
+*/
+
+char ourhostname[MAX_HOST];   /* This is our hostname with domainname */
+char serverhost[MAX_HOST];    /* Server MrsBot will use. Defaults to SERV. */
+char defchannel[MAX_CHANNEL]; /* Channel MrsBot will use. */
+char dfltnick[MAX_NICK];      /* Nickname MrsBot will use. */
+int  incoming_connnum;
+d939 13
+d994 1
+a994 1
+	if( connections[connnum].type & TYPE_REGISTERED )
+d1037 1
+a1037 1
+	  prnt(connections[connnum].socket,"You aren't registered\n");
+d1260 1
+d1262 1
+d1269 2
+a1270 1
+		    if(islegal_pass(connections[connnum].userhost, password))
+d1272 4
+a1275 3
+			  connections[connnum].type |= TYPE_REGISTERED;
+			  sprintf(dccbuff,"REGISTERED\n");;
+			  prnt(connections[connnum].socket,dccbuff);
+d1278 5
+a1282 1
+		      prnt(connections[connnum].socket,"ILLEGAL\n");
+d1298 1
+d1304 3
+a1306 3
+	    if(userlist[i].type & TYPE_BOT)
+	      (void)sprintf(dccbuff,"%s - REMOTE TCM\n",
+			    userlist[i].userathost);
+d1308 7
+a1314 2
+	      (void)sprintf(dccbuff,"%s\n",
+			    userlist[i].userathost);
+d1336 1
+d1339 9
+d1351 1
+a1351 1
+
+a1353 3
+		(void)sprintf(dccbuff,"%s:%d",
+			      botlist[i].userathost,
+			      botlist[i].port);
+d1355 12
+d1374 9
+a1382 5
+			(void)sprintf(dccbuff,"%s %s %s\n",
+				      botlist[i].theirnick,
+				      dfltnick,
+				      botlist[i].password);
+			prnt(socket,dccbuff);
+a1429 2
+      char *type;
+
+a1432 5
+	    type = "user";
+	    if(connections[i].type & TYPE_OPER)
+	      type = "Oper";
+	    if(connections[i].type & TYPE_BOT)
+	      type = "Bot";
+d1434 4
+a1437 2
+		    type,
+		    connections[i].nick, connections[i].userhost);
+d1640 8
+a1647 2
+	}
+    else if (!strcmp(fctn,"205"))
+d1649 1
+a1649 1
+    else if (!strcmp(fctn,"209"))
+d1724 1
+a1724 1
+#ifdef AUTOPILOT
+a1725 1
+#endif
+a1796 1
+#ifdef AUTOPILOT
+a1797 1
+#endif
+d1842 2
+a1843 5
+    {
+      rdpt();
+      if (amianoper == NO)
+	do_init();
+    }
+d1932 1
+a1932 1
+side effects	- just listen on TCM_PORT port. nothing fancy.
+d1944 1
+a1944 1
+  socketname.sin_port = htons(TCM_PORT);
+d1948 1
+a1948 1
+      fprintf(stderr,"Can't create socket for TCM_PORT\n");
+d2130 23
+@
+
+
+1.19
+log
+@checkpoint, tons of changes remote bot linking etc.
+@
+text
+@d26 1
+d62 1
+a62 1
+static char *version="$Id: serverif.c,v 1.18 1997/03/14 03:56:21 db Exp db $";
+d68 1
+a68 1
+extern AUTH_FILE_ENTRY botlist[];
+d101 1
+d122 1
+d283 8
+a290 1
+      if (connections[i].socket != INVALID)
+d292 1
+a292 1
+	  if(opers_only)
+d294 6
+a299 1
+	      if(connections[i].type & TYPE_OPER)
+a301 2
+	  else
+	    prnt(connections[i].socket, buff);
+d343 2
+d347 1
+d451 1
+a451 1
+  if((strcasecmp("on",parm2,2) == 0) && (strcasecmp(server_name,parm3) == 0))
+d627 1
+d691 6
+d698 2
+a699 2
+	  (connections[i].type & TYPE_OPER) ?
+	  "Oper" : "User", connections[i].nick,
+d708 46
+d786 4
+a789 2
+  if(connections[connnum].type & TYPE_OPER) type = "Oper";
+  if(connections[connnum].type & TYPE_BOT) type = "Bot";
+d800 2
+a801 1
+	      connections[connnum].nick, connections[connnum].userhost);
+d832 2
+a833 2
+	  if(!(connections[connnum].type & TYPE_BOT))
+	    strcpy(dccbuff,"[Opers only]<");
+d835 1
+a835 1
+	    strcpy(dccbuff,"[Opers Only]");
+d839 3
+a841 1
+	  if(!(connections[connnum].type & TYPE_BOT))
+a842 2
+	  else
+	    dccbuff[0] = '\0';
+d845 4
+a848 1
+      if(!(connections[connnum].type & TYPE_BOT))
+a849 2
+      else
+	strcat(dccbuff," ");
+a851 1
+
+d858 10
+d872 1
+a872 1
+  else if(!strncasecmp(buffer,"clear",5))
+d874 1
+a874 1
+      (void)sprintf(dccbuff,"clear requested by %s",
+d880 6
+a888 1
+  
+d948 56
+a1016 2
+	    sendto_all_linkedbots(buffer);
+
+a1067 2
+	    sendto_all_linkedbots(buffer);
+
+a1109 2
+	    sendto_all_linkedbots(buffer);
+
+a1149 2
+	    sendto_all_linkedbots(buffer);
+
+d1251 1
+d1260 6
+a1265 2
+	    strncpy(dccbuff,userlist[i].userathost,MAX_HOST-1);
+	    strcat(dccbuff,"\n");
+d1269 1
+a1269 1
+    else if (!strncasecmp(buffer,"remote",6))
+d1282 37
+a1318 1
+#endif
+d1358 2
+d1363 5
+d1369 1
+a1369 1
+		    (connections[i].type & TYPE_OPER) ? "Oper" : "User",
+d1386 2
+d1391 7
+d1399 1
+a1399 1
+			  (connections[i].type & TYPE_OPER) ? "oper" : "user",
+d1885 2
+a1886 1
+  if(bind(remote_tcm_socket,&socketname,sizeof(socketname)) < 0)
+a1931 1
+
+d1933 1
+a1933 1
+				     &incoming_addr,&addrlen)) < 0 )
+d1955 1
+a1955 1
+		inet_ntoa(incoming_addr.sin_addr.s_addr),MAX_HOST-1);
+d1966 1
+d1971 1
+a1971 1
+	  botname = strtok(connections[connnum].buffend," ");
+d1973 1
+a1973 1
+	  if(botname != (char *)NULL)
+d1975 21
+a2004 1
+		      connections[connnum].type &= ~TYPE_PENDING;
+d2009 3
+a2011 2
+		      (void)sprintf(dccbuff,"illegal connection from %s",
+				    connections[connnum].userhost);
+a2043 1
+  char dccbuff[DCCBUFF_SIZE];
+d2051 8
+a2058 2
+	      (void)sprintf(dccbuff,".%s\n", buffer );
+	      prnt(connections[i].socket,dccbuff);
+@
+
+
+1.18
+log
+@fixed links message
+@
+text
+@d22 4
+d47 1
+d61 1
+a61 1
+static char *version="$Id: serverif.c,v 1.17 1997/03/09 05:42:49 db Exp db $";
+d66 3
+d81 2
+d94 6
+a99 1
+void clear_userlist();
+d109 1
+d111 5
+d121 3
+a123 1
+struct connection connections[MAXDCCCONNS+1];
+d129 4
+a132 1
+extern char mychannel[80];
+d242 2
+a243 2
+    send(sock, msg, strlen(msg), 0);
+    printf(msg);
+d245 2
+a246 2
+    printf(msg);	/* - zaph */
+    fprintf(outfile,"%s",msg);
+d278 1
+a278 1
+  for (i=1; i<maxconns; ++i)
+d280 1
+a280 1
+      if (connections[i].socket != -1)
+d284 1
+a284 1
+	      if(connections[i].oper)
+d295 1
+a295 1
+**   Read incoming data off one of the sockets and process it
+d300 1
+d309 2
+d313 6
+a318 15
+	  for (i=0; i<maxconns; ++i) {
+	    if (connections[i].socket != -1 &&
+		FD_ISSET(connections[i].socket, &readfds)) {
+	      lnth = recv(connections[i].socket, connections[i].buffend, 1, 0);
+	      if (lnth == 0) {
+		if (i == 0)
+		  linkclosed();
+		else
+		  closeconn(i);
+		return;
+	      }
+	      if (*connections[i].buffend == '\n' ||
+		  *connections[i].buffend == '\r' ||
+		  connections[i].buffend - connections[i].buffer
+		  == BUFFERSIZE-1)
+d320 43
+a362 8
+		  *connections[i].buffend = '\0';
+		  connections[i].buffend = connections[i].buffer;
+		  if (*connections[i].buffer)
+		    if (i == 0)
+		      serverproc();
+		    else
+		      dccproc(i);
+		  return;
+a363 2
+	      else
+		++connections[i].buffend;
+d365 107
+a471 1
+	  }
+d476 8
+d509 1
+a510 1
+  printf(">%s %s %s\n",source, fctn, body);	/* - zaph */
+a512 1
+  printf(">%s %s %s\n",source, fctn, body);
+a527 13
+    char server[MAX_HOST];
+    char *p;
+
+/*
+  server name portion should not include possible :port information
+
+  - Dianora
+*/
+    strncpy(server,server_config,MAX_HOST-1);
+    server[MAX_HOST-1] = '\0';
+    p = strchr(server,':');
+    if(p)
+      *p = '\0';
+d532 6
+a537 3
+    sprintf(buff,"user %s %s %s :%s\nnick %s\n", username_config,
+	    ourhostname, server,
+            ircname_config, mynick);
+d555 11
+a565 3
+    prnt(sock,"pong ");
+    prnt(sock,hst);
+    prnt(sock,"\n");
+d579 21
+a599 23
+    (void)close(connections[0].socket);
+    if(logging_fp)
+      (void)fclose(logging_fp);	/* -Dianora */
+
+    if (++reconnects > MAXRECONNECTS)
+      quit = 1;
+    else
+      {
+	sleep(30);
+	connections[0].socket = bindsocket(serverhost);
+	if (connections[0].socket == -1)
+	  {
+	    quit = 1;
+	    return;
+	  }
+	clear_userlist();
+	signon();
+	join(defchannel); 
+	initopers();
+	oper();
+	freehash();
+	inithash();
+      }
+d610 2
+a611 2
+    int i;
+    char dccbuff[150];
+d613 7
+a619 9
+    for (i=1; i<MAXDCCCONNS+1; ++i)
+      if (connections[i].socket == -1) {
+        if (maxconns < i+1)
+          maxconns = i+1;
+        break;
+        }
+
+    if (i > MAXDCCCONNS)
+      return 0;
+d621 2
+a622 1
+    connections[i].socket = bindsocket(hostport);
+d624 1
+a624 2
+    if (connections[i].socket == -1)
+      return 0;
+d626 2
+a627 6
+    connections[i].buffer = (char *)malloc(BUFFERSIZE);
+    if(connections[i].buffer == (char *)NULL)
+      {
+	sendtoalldcc("Ran out of memory in makeconn",NO);
+	gracefuldie();
+      }
+d629 6
+a634 7
+    connections[i].buffend = connections[i].buffer;
+    strncpy(connections[i].nick,nick,MAX_NICK-1);
+    connections[i].nick[MAX_NICK-1] = 0;
+    strncpy(connections[i].userhost,userhost,MAX_HOST-1);
+    connections[i].userhost[MAX_HOST-1] = 0;
+    connections[i].oper = isoper(userhost);
+    connections[i].linked_bot = islinkedbot(userhost);
+d636 8
+d648 12
+a659 13
+    if(!connections[i].oper)
+      {
+	prnt(connections[i].socket,
+	     "Sorry, only opers may use this service.\n");
+	(void)close(connections[i].socket);
+	connections[i].socket = -1;
+	connections[i].nick[0] = '\0';
+	connections[i].userhost[0] = '\0';
+	connections[i].oper = NO;
+	connections[i].linked_bot = NO;
+	(void)free(connections[i].buffer);
+	return 0;
+      }
+d661 2
+a662 2
+    prnt(connections[i].socket,VERSION2);
+    prnt(connections[i].socket,"\n");
+d664 2
+a665 2
+   /* Print a message of the day - Dianora */
+    print_motd(connections[i].socket);
+d668 4
+a671 4
+    if( autopilot )
+      prnt(connections[i].socket,"autopilot is ON\n");
+    else
+      prnt(connections[i].socket,"autopilot is OFF\n");
+d674 8
+a681 7
+    sprintf(dccbuff,"%s %s (%s) has connected",
+            connections[i].oper ? "Oper" : "User", connections[i].nick,
+            connections[i].userhost);
+    msg(mychannel,dccbuff);
+    sendtoalldcc(dccbuff,NO);
+    prnt(connections[i].socket,"Connected.  Send '.help' for commands.\n");
+    return 1;
+d684 8
+d696 2
+a697 1
+  char dccbuff[150];
+d699 1
+a699 1
+  if (connections[connnum].socket != -1)
+d701 31
+a731 11
+  free (connections[connnum].buffer);
+  connections[connnum].socket = -1;
+  if (connnum + 1 == maxconns) {
+    for (i=maxconns;i>0;--i)
+      if (connections[i].socket != -1)
+        break;
+    maxconns = i+1;
+    }
+  sprintf(dccbuff,"%s %s (%s) has disconnected",
+          connections[connnum].oper ? "Oper" : "User",
+          connections[connnum].nick, connections[connnum].userhost);
+d734 2
+d745 9
+a753 4
+    char *buffer = connections[connnum].buffer;
+    char *hold,dccbuff[MAX_BUFF];
+    int i;
+    int opers_only; 	/* Is it an oper only message ? */
+d755 6
+a760 9
+    /* added command character - Dianora */
+    if(*buffer != '.')
+      {
+	opers_only = NO;
+	if((buffer[0] == 'o' || buffer[0] == 'O')
+	   && buffer[1] == ':')
+	  {
+	    buffer += 2;
+	    opers_only = YES;
+d762 15
+a776 3
+	  }
+	else
+	  strcpy(dccbuff,"<");
+d778 1
+a778 3
+	strcat(dccbuff,connections[connnum].nick);
+	strcat(dccbuff,"> ");
+	strcat(dccbuff,buffer);
+d780 3
+a782 3
+	sendtoalldcc(dccbuff,opers_only); /* Thanks Garfr, Talen - Dianora */
+	return;
+      }
+d784 1
+a784 1
+    buffer++;	/* skip the '.' */
+d786 18
+a803 11
+    if (!strncasecmp(buffer,"clones",6))
+      report_clones(connections[connnum].socket);
+    else if (!strncasecmp(buffer,"nflood",6))
+      report_nick_flooders(connections[connnum].socket);
+    else if(!strncasecmp(buffer,"clear",5))
+      {
+	initopers();
+	freehash();
+	inithash();
+      }
+    else if (!strncasecmp(buffer,"failures",6)) {
+d806 1
+a806 1
+        report_failures(connections[connnum].socket,10);
+d808 1
+a808 1
+        prnt(connections[connnum].socket,"Usage: failures [min failures]\n");
+d810 4
+a813 3
+        report_failures(connections[connnum].socket,atoi(hold));
+      }
+    else if (!strncasecmp(buffer,"domains",7)) {
+d818 1
+a818 1
+        prnt(connections[connnum].socket,"Usage: domains [min users]\n");
+d821 12
+a832 10
+      }
+    else if (!strncasecmp(buffer,"checkversion",12))
+      if (connections[connnum].oper)
+        massversion(connections[connnum].socket);
+      else
+        prnt(connections[connnum].socket,"Only authorized opers may use this command\n");
+    else if (!strncasecmp(buffer,"multi",5) || !strncasecmp(buffer,"bots",4))
+      report_multi(connections[connnum].socket,2);
+    else if (!strncasecmp(buffer,"list",4))
+      if (connections[connnum].oper) {
+d835 2
+a836 1
+          prnt(connections[connnum].socket,"Usage: list <wildcarded userhost>\n");
+d839 4
+a842 3
+        }
+      else
+        prnt(connections[connnum].socket,"Only authorized opers may use this command\n");
+d844 15
+a858 10
+    else if (!strncasecmp(buffer,"killlist",8))
+      if (connections[connnum].oper) {
+        hold = strchr(buffer,' ');
+        if (!hold)
+          prnt(connections[connnum].socket,"Usage: killlist <wildcarded userhost>\n");
+        else
+          kill_list_users(connections[connnum].socket,hold+1);
+        }
+      else
+        prnt(connections[connnum].socket,"Only authorized opers may use this command\n");
+d872 1
+a872 1
+	if( connections[connnum].oper )
+d874 2
+d900 2
+a901 3
+			sprintf(dccbuff,
+			"missing reason \"kline [nick]|[user@@host] reason\"");
+		       	sendtoalldcc(dccbuff,YES);
+d906 2
+a907 4
+		    sprintf(dccbuff,
+                  "missing nick/user@@host \"kline [nick]|[user@@host] reason\"");
+		    sendtoalldcc(dccbuff,YES);
+		    
+d911 2
+d925 1
+a925 1
+	if( connections[connnum].oper )
+d927 2
+d939 2
+a940 1
+		    sprintf(cmd,"KLINE %s :Clones are prohibited [%s %02d/%02d/%02d]\n",
+d950 2
+a951 4
+		    sprintf(dccbuff,
+                  "missing nick/user@@host \"kclone [nick]|[user@@host]\"");
+		    sendtoalldcc(dccbuff,YES);
+		    
+d955 2
+d969 1
+a969 1
+	if( connections[connnum].oper )
+d971 2
+d993 2
+a994 4
+		    sprintf(dccbuff,
+                  "missing nick/user@@host \"kflood [nick]|[user@@host]\"");
+		    sendtoalldcc(dccbuff,YES);
+		    
+d998 2
+d1007 1
+a1007 1
+ 
+d1011 1
+a1011 1
+        if( connections[connnum].oper )
+d1013 2
+d1025 2
+a1026 1
+                    sprintf(cmd,"KLINE %s :Bots are prohibited [%s %02d/%02d/%02d]\n",
+d1036 30
+a1065 2
+                    sprintf(dccbuff,
+                  "missing nick/user@@host \"kbot [nick]|[user@@host]\"");
+d1067 42
+a1108 1
+ 
+d1112 3
+d1116 3
+d1120 22
+d1156 1
+a1156 1
+	    if( connections[connnum].oper)
+d1162 3
+a1164 1
+		    sendtoalldcc("autopilot is now ON",YES);
+d1169 3
+a1171 1
+		    sendtoalldcc("autopilot is now OFF",YES);
+d1174 3
+d1180 2
+a1181 1
+    else if (!strncasecmp(buffer,"connections",11)) {
+d1183 6
+a1188 25
+        if (connections[i].socket != -1) {
+          sprintf(dccbuff,"%s %s (%s) is connected\n",
+                  connections[i].oper ? "Oper" : "User",
+                  connections[i].nick, connections[i].userhost);
+          prnt(connections[connnum].socket,dccbuff);
+          }
+       }
+    else if (!strncasecmp(buffer,"disconnect",10))
+      if (connections[connnum].oper) {
+        hold = strchr(buffer,' ');
+        if (!hold)
+          prnt(connections[connnum].socket,"Usage: disconnect <nickname>\n");
+        else {
+          for (i=1;i<maxconns;++i)
+            if (connections[i].socket != -1 &&
+                !strcasecmp(hold+1,connections[i].nick)) {
+              sprintf(dccbuff,"Disconnecting %s %s\n",
+                      connections[i].oper ? "oper" : "user",
+                      connections[i].nick);
+              prnt(connections[connnum].socket,dccbuff);
+              sprintf(dccbuff,"You have been disconnected by oper %s\n",
+                      connections[connnum].nick);
+              prnt(connections[i].socket,dccbuff);
+              closeconn(i);
+              }
+d1190 26
+d1218 7
+a1224 1
+        prnt(connections[connnum].socket,"Only authorized opers may use this command\n");
+d1227 5
+a1231 3
+    else if (!strncasecmp(buffer,"close",5)) {
+      prnt(connections[connnum].socket,"Closing connection\n");
+      closeconn(connnum);
+d1233 1
+d1235 62
+a1296 22
+    else if (!strncasecmp(buffer,"op",2)) {
+      hold = strchr(buffer,' ');
+      if (!hold)
+        prnt(connections[connnum].socket,"Usage: op [nick]\n");
+      else
+        op(defchannel,buffer); 
+    }
+    else if (!strncasecmp(buffer,"cycle",5)) {
+      if (connections[connnum].oper) {
+        leave(defchannel);
+        sendtoalldcc("I'm cycling.  Be right back.", YES);
+        sleep(1);
+        join(defchannel);
+        }
+      else
+        prnt(connections[connnum].socket,"Only authorized opers may use this command.\n");
+    }
+    else if (!strncasecmp(buffer,"die",3)) {
+      if (connections[connnum].oper) {
+        sendtoalldcc("I've been ordered to quit irc, goodbye.", YES);
+        prnt(connections[0].socket,"QUIT :Dead by request!\n");
+        exit(1);
+a1297 3
+      else
+        prnt(connections[connnum].socket,"Only authorized opers may use this command\n");
+    }
+d1392 14
+a1405 4
+    else if (!strcmp(fctn,"NOTICE")) {
+        if (strchr(source,'.') && !strncmp(body,"*** Notice -- ",14))
+            onservnotice(body+14);
+        }
+d1424 1
+a1424 1
+    fclose(outfile);
+d1427 2
+a1428 4
+    if(logging_fp != (FILE *)NULL)
+      (void)fclose(logging_fp);
+
+    prnt(connections[0].socket,"QUIT :Woo hoo!  Bot crash!\n");
+d1430 2
+d1435 3
+a1437 3
+    if(sig != SIGTERM )
+      abort();
+    exit(1);
+d1457 1
+d1490 1
+a1490 5
+    int i;
+    char source[80];
+    char fctn[80];
+    char body[512];
+    char buff[512];
+d1492 2
+a1493 1
+    init_userlist();
+d1495 4
+a1498 4
+    if(argc < 2)
+      load_config_file(CONFIG_FILE);
+    else
+      load_config_file(argv[1]);
+d1500 1
+a1500 1
+    strcpy(serverhost,server_config);	/* Load up desired server */
+d1502 2
+a1503 2
+   I removed the command line options for server/channel
+   do it in the tcm.cf file... - Dianora
+d1505 9
+a1513 9
+    for (i=0;i<MAXDCCCONNS+1;++i)
+       connections[i].socket = -1;
+
+    *mychannel = 0;
+    srand(time(NULL));	/* -zaph */
+    signal(SIGSEGV,gracefuldie);
+    signal(SIGBUS,gracefuldie);
+    signal(SIGTERM,gracefuldie);
+    signal(SIGHUP,reload_user_list);
+d1517 7
+a1523 7
+    if((outfile = fopen("tcm.pid","w")) == (FILE *)NULL)
+      {
+	printf("Cannot write tcm.pid\n");
+	exit(1);
+      }
+    (void)fprintf(outfile,"%d", getpid());
+    (void)fclose(outfile);
+d1526 5
+a1530 5
+    if( (outfile = fopen(DEBUG_LOGFILE,"w")) == (FILE *)NULL)
+      {
+	(void)printf("Cannot create %s\n",DEBUG_LOGFILE);
+	exit(1);
+      }
+d1534 1
+a1534 1
+    load_hostlist();
+d1537 8
+a1544 2
+    connections[0].socket = bindsocket(serverhost);
+    if (connections[0].socket == -1)
+d1546 5
+a1550 4
+    connections[0].buffer = (char *)malloc(BUFFERSIZE);
+    connections[0].oper = 0;
+    maxconns = 1;
+    FD_ZERO (&nullfds);
+d1552 8
+a1559 8
+    if(virtual_host_config[0] != '\0')
+      {
+	strncpy(ourhostname,virtual_host_config,MAX_HOST-1);
+      }
+    else
+      {
+	gethostname(ourhostname,MAX_HOST-1);
+	i = strlen(ourhostname);
+d1561 1
+a1561 1
+	getdomainname(ourhostname+i+1,(MAX_HOST-2)-i);
+d1563 24
+a1586 19
+	/* getdomainname() doesn't exist on BSDI as best I can tell,
+	   so here's some ugliness... and yes, I'm aware I could use
+	   DNS lookups to do this, but I'm tired as hell and don't
+	   feel like adding it right now */
+	strcpy(ourhostname+i+1,DOMAIN);
+#endif
+	ourhostname[i] = '.';
+      }
+    *mynick = '\0';
+    clear_userlist();
+    signon();
+    oper();
+    initopers();	/* Find out who the opers are - Dianora */
+    inithash();
+    init_nick_change_table();
+    init_link_look_table();
+    while(!quit)
+        rdpt();
+    prnt(connections[0].socket,"QUIT :Bot terminating normally\n");
+d1588 1
+a1588 1
+    fclose(outfile);
+d1665 177
+@
+
+
+1.17
+log
+@grrr typo. its late
+@
+text
+@d56 1
+a56 1
+static char *version="$Id: serverif.c,v 1.16 1997/03/09 05:40:14 db Exp db $";
+d554 1
+d559 11
+a569 1
+	strcpy(dccbuff,"<");
+d574 1
+a574 5
+	/*	(void)sprintf(dccbuff,"<%s> %s",
+		      connections[connnum].nick,buffer);
+		      */
+
+	sendtoalldcc(dccbuff,NO);	/* Thanks Garfr, Talen - Dianora */
+d909 1
+a909 1
+    else /* default to sending to all connected users -Dianora */
+d911 1
+a911 14
+/*      prnt(connections[connnum].socket,"Unknown command\n"); */
+
+	if( ((buffer[0] == 'O') || (buffer[0] == 'o'))
+	  && (buffer[1] == ':'))
+	    {
+	      (void)sprintf(dccbuff,"[Opers only]<%s>%s",
+			    connections[connnum].nick,buffer+2);
+	      sendtoalldcc(dccbuff,YES); /* Thanks Garfr, Talen - Dianora */
+	    }
+	else
+	  {
+	    prnt(connections[connnum].socket,
+		 "Unknown command\n");
+	  }
+@
+
+
+1.16
+log
+@virtual host support, fixed signon code
+@
+text
+@d56 1
+a56 1
+static char *version="$Id: serverif.c,v 1.15 1997/03/09 05:26:57 db Exp db $";
+d370 1
+a370 1
+    strncpy(server,server_config,MAX_HOST-1];
+@
+
+
+1.15
+log
+@virtual host support
+@
+text
+@d56 1
+a56 1
+static char *version="$Id: serverif.c,v 1.14 1997/03/07 21:21:14 db Exp db $";
+d362 13
+d380 1
+a380 1
+	    ourhostname, server_config,
+@
+
+
+1.14
+log
+@many changes, fixed core dump problem with linux, added some early link code
+@
+text
+@d56 1
+a56 1
+static char *version="$Id: serverif.c,v 1.13 1997/03/07 18:44:44 db Exp db $";
+d71 1
+d95 2
+a96 2
+char ourhostname[80];      /* This is our hostname with domainname */
+char serverhost[80];       /* Server MrsBot will use. Defaults to SERV. */
+d98 1
+a98 1
+char dfltnick[MAX_NICK];   /* Nickname MrsBot will use. */
+d117 1
+d119 2
+d124 1
+a124 1
+  char server[80],*hold;
+d142 29
+d463 2
+a464 2
+    strncpy(connections[i].userhost,userhost,79);
+    connections[i].userhost[79] = 0;
+a485 3
+    prnt(connections[i].socket,VERSION1);
+    prnt(connections[i].socket,"\n");
+
+d489 1
+a489 6
+#ifdef AUTO_KLINE
+    prnt(connections[i].socket,VERSION3);
+    prnt(connections[i].socket,"\n");
+#endif
+
+    /* Print a message of the day - Dianora */
+d504 1
+a504 1
+    prnt(connections[i].socket,"Connected.  Send 'help' for commands.\n");
+d1013 2
+a1014 1
+void gracefuldie()
+d1028 2
+a1029 1
+    abort();
+d1121 1
+a1121 1
+    if( (outfile = fopen("mrsbot.log","w")) == (FILE *)NULL)
+d1123 1
+a1123 1
+	printf("Cannot create mrsbot.log\n");
+d1139 9
+a1147 2
+    gethostname(ourhostname,79);
+    i = strlen(ourhostname);
+d1149 1
+a1149 1
+    getdomainname(ourhostname+i+1,78-i);
+d1151 5
+a1155 5
+    /* getdomainname() doesn't exist on BSDI as best I can tell,
+       so here's some ugliness... and yes, I'm aware I could use
+       DNS lookups to do this, but I'm tired as hell and don't
+       feel like adding it right now */
+    strcpy(ourhostname+i+1,DOMAIN);
+d1157 2
+a1158 1
+    ourhostname[i] = '.';
+@
+
+
+1.13
+log
+@added new structure element to connections
+@
+text
+@d56 1
+a56 1
+static char *version="$Id: serverif.c,v 1.12 1997/03/06 17:57:22 db Exp db $";
+d186 1
+d310 1
+d426 1
+d433 1
+d447 2
+a448 2
+	connections[i].oper = 0;
+	connections[i].linked_bot = 0;
+d1077 1
+a1077 1
+    srandom(time(NULL));
+@
+
+
+1.12
+log
+@added config file option at startup
+@
+text
+@d56 1
+a56 1
+static char *version="$Id: serverif.c,v 1.11 1997/03/06 17:38:16 db Exp db $";
+d141 1
+a141 1
+#if defined(LINUX) || defined(FREEBSD) || defined(BSDI) || defined(SOLARIS)
+d224 1
+a224 1
+	      if(connections[i].texasoper)
+d425 2
+a426 2
+    strncpy(connections[i].nick,nick,9);
+    connections[i].nick[9] = 0;
+d429 1
+a429 1
+    connections[i].texasoper = istexasoper(userhost);
+d435 1
+a435 1
+    if(!connections[i].texasoper)
+d443 2
+a444 1
+	connections[i].texasoper = 0;
+d460 3
+d471 1
+a471 1
+            connections[i].texasoper ? "Oper" : "User", connections[i].nick,
+d496 1
+a496 1
+          connections[connnum].texasoper ? "Oper" : "User",
+d516 6
+a521 1
+	(void)sprintf(dccbuff,"<%s> %s",
+d523 2
+d560 1
+a560 1
+      if (connections[connnum].texasoper)
+d567 1
+a567 1
+      if (connections[connnum].texasoper) {
+d578 1
+a578 1
+      if (connections[connnum].texasoper) {
+d600 1
+a600 1
+	if( connections[connnum].texasoper )
+d652 1
+a652 1
+	if( connections[connnum].texasoper )
+d693 1
+a693 1
+	if( connections[connnum].texasoper )
+d733 1
+a733 1
+        if( connections[connnum].texasoper )
+d778 1
+a778 1
+	    if( connections[connnum].texasoper)
+d799 1
+a799 1
+                  connections[i].texasoper ? "Oper" : "User",
+d805 1
+a805 1
+      if (connections[connnum].texasoper) {
+d814 1
+a814 1
+                      connections[i].texasoper ? "oper" : "user",
+d841 1
+a841 1
+      if (connections[connnum].texasoper) {
+d851 1
+a851 1
+      if (connections[connnum].texasoper) {
+d1105 1
+a1105 1
+    connections[0].texasoper = 0;
+@
+
+
+1.11
+log
+@Toast fixes, plus added commands kbot kclone and added command
+char to commands
+@
+text
+@d56 1
+a56 1
+static char *version="$Id: serverif.c,v 1.10 1997/01/05 04:28:44 db Exp db $";
+a1046 1
+    load_config_file();
+d1048 6
+a1053 1
+    strcpy(serverhost,server_config);
+@
+
+
+1.10
+log
+@fixed AUTO_NICK_KILL lame O line detection AUTO_LINK_LOOK_KILL
+@
+text
+@d18 1
+a18 1
+*   void closeconn                                           *
+d45 1
+d56 1
+a56 1
+static char *version="$Id: serverif.c,v 1.9 1997/01/01 01:42:31 db Exp db $";
+a74 9
+struct connection {
+  char *buffer;
+  char *buffend;
+  int  socket;
+  char texasoper;
+  char userhost[80];
+  char nick[MAX_NICK];
+  };
+
+d509 11
+d600 1
+d605 1
+a605 1
+			sprintf(cmd,"KLINE *@@%s :%s by %s %02d/%02d/%02d\n",
+d630 123
+d862 2
+a863 3
+	    (void)sprintf(dccbuff,"<%s> %s",
+			  connections[connnum].nick,buffer);
+	    sendtoalldcc(dccbuff,NO);	/* Thanks Garfr, Talen - Dianora */
+d983 5
+@
+
+
+1.9
+log
+@autopilot, auto kill nick flooders, auto kill link lookers code
+remote kline etc.
+@
+text
+@d55 1
+a55 1
+static char *version="$Id: serverif.c,v 1.8 1996/12/18 02:51:52 db Exp db $";
+d97 2
+a98 4
+/* - Dianora */
+#ifdef DEBUGMODE
+FILE *outfile;             /* Debug output file handle */
+#endif
+d208 7
+d609 13
+d919 4
+a922 9
+
+    if (argc > 1)
+      if (strchr(argv[1],'.')) {
+        strcpy(serverhost,argv[1]);
+        if (argc > 2)
+          strcpy(&defchannel[1],argv[2]);
+        }
+      else
+        strcpy(&defchannel[1],argv[1]);
+d925 1
+d932 11
+d944 4
+a947 4
+    outfile = fopen("mrsbot.log","w");
+    if (!outfile) {
+      printf("Cannot create mrsbot.log\n");
+      exit(1);
+@
+
+
+1.8
+log
+@majority of email changes here
+@
+text
+@d3 1
+a3 1
+* serverif.c                                                *
+d55 1
+a55 1
+static char *version="$Id: serverif.c,v 1.3 1996/12/14 22:48:59 db Exp db $";
+d60 4
+d462 7
+a511 3
+#ifdef DEBUGMODE
+    fprintf(outfile,"}%s\n",babybuffer);
+#endif
+d558 1
+a558 1
+    else if (!strncasecmp(buffer,"killlist",4))
+d569 70
+d676 28
+d708 2
+a709 2
+	if( (buffer[0] == 'O') || (buffer[0] == 'o')
+	  && buffer[1] == ':')
+d860 1
+a860 1
+#ifdef AUTO_KLINE
+d926 1
+a926 1
+#ifdef AUTO_KLINE
+d956 1
+@
+
+
+1.7
+log
+@VERSION1/VERSION2/VERSION3 defines in config.h
+@
+text
+@d68 1
+d871 21
+a891 3
+time_t current_time;
+struct tm *broken_up_time;
+char filename[MAX_BUFF];
+d899 1
+d901 31
+@
+
+
+1.6
+log
+@AUTO_KLINE added, make sure userlist properly setup
+@
+text
+@d63 1
+d446 10
+d702 1
+a702 1
+      on_stats_o_done();
+d754 1
+a754 1
+  load_hosts();
+@
+
+
+1.5
+log
+@fixed conf and added some of phishers code
+@
+text
+@d379 1
+d593 1
+a593 1
+	      (void)sprintf(dccbuff,"[Opers only]<%s> %s",
+d740 1
+d742 3
+d779 1
+d807 5
+a811 1
+/*    load_userlist(); */
+d832 1
+@
+
+
+1.4
+log
+@added stats o to get user list of tcm, added tcm.cf file
+@
+text
+@d536 12
+d776 1
+a776 1
+    strcpy(serverhost,SERV);
+@
+
+
+1.3
+log
+@added o: code to messaging
+@
+text
+@d18 1
+a18 1
+*   void cloeconn                                           *
+d55 1
+a55 1
+static char *version="$Id: serverif.c,v 1.2 1996/12/09 01:13:53 db Exp db $";
+d62 5
+a84 1
+void load_user_list();
+d100 2
+a101 2
+char defchannel[80];       /* Channel MrsBot will use.  Defaults to INCH. */
+char dfltnick[MAX_NICK];   /* Nickname MrsBot will use.  Defaults to NAME. */
+d328 3
+a330 2
+    sprintf(buff,"user %s %s %s :%s\nnick %s\n", USERNAME, ourhostname, SERV,
+            RLNM, mynick);
+d381 1
+d426 19
+d497 1
+d663 2
+d674 6
+d720 1
+d727 4
+a730 3
+  clear_userlist();
+  load_userlist(); 
+  sendtoalldcc("*** Caught SIGHUP *** reloading user list",NO);
+d762 2
+a764 2
+    strcpy(defchannel,INCH);
+    strcpy(dfltnick,NAME);
+d789 1
+a789 1
+    load_userlist();
+d812 1
+@
+
+
+1.2
+log
+@use strtoul() instead of strtol() for DCC CHAT in SOLARIS as well
+@
+text
+@d55 1
+a55 1
+static char *version="$Id$";
+d197 6
+a202 1
+void sendtoalldcc(msg)
+d204 1
+d212 12
+a223 2
+    if (connections[i].socket != -1)
+      prnt(connections[i].socket, buff);
+d234 37
+a270 27
+  for (;;) {
+    FD_ZERO (&readfds);
+    for (i=0; i<maxconns; ++i)
+      if (connections[i].socket != -1)
+        FD_SET(connections[i].socket,&readfds);
+    select (FD_SETSIZE, &readfds, &nullfds, &nullfds, NULL);
+    for (i=0; i<maxconns; ++i) {
+      if (connections[i].socket != -1 &&
+          FD_ISSET(connections[i].socket, &readfds)) {
+        lnth = recv(connections[i].socket, connections[i].buffend, 1, 0);
+        if (lnth == 0) {
+          if (i == 0)
+            linkclosed();
+          else
+            closeconn(i);
+          return;
+          }
+        if (*connections[i].buffend == '\n' || *connections[i].buffend == '\r' ||
+            connections[i].buffend - connections[i].buffer == BUFFERSIZE-1) {
+          *connections[i].buffend = '\0';
+          connections[i].buffend = connections[i].buffer;
+          if (*connections[i].buffer)
+            if (i == 0)
+              serverproc();
+            else
+	      dccproc(i);
+	  return;
+d272 1
+a272 4
+        else
+          ++connections[i].buffend;
+        }
+      }
+d411 1
+a411 1
+	sendtoalldcc("Ran out of memory in makeconn");
+d424 1
+a424 1
+    sendtoalldcc(dccbuff);
+d449 1
+a449 1
+  sendtoalldcc(dccbuff);
+d551 13
+a563 3
+	(void)sprintf(dccbuff,"<%s> %s",
+		      connections[connnum].nick,buffer);
+	sendtoalldcc(dccbuff);	/* Thanks Garfr, Talen - Dianora */
+d694 1
+a694 1
+  sendtoalldcc("*** Caught SIGHUP *** reloading user list");
+d729 1
+@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@d55 2
+@

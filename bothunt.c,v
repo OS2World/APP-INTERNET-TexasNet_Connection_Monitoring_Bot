@@ -1,0 +1,5261 @@
+head	1.29;
+access;
+symbols;
+locks
+	db:1.29; strict;
+comment	@ * @;
+
+
+1.29
+date	97.06.01.18.04.31;	author db;	state Exp;
+branches;
+next	1.28;
+
+1.28
+date	97.05.26.16.14.56;	author db;	state Exp;
+branches;
+next	1.27;
+
+1.27
+date	97.05.21.00.56.29;	author db;	state Exp;
+branches;
+next	1.26;
+
+1.26
+date	97.05.12.01.48.33;	author db;	state Exp;
+branches;
+next	1.25;
+
+1.25
+date	97.05.01.00.31.30;	author db;	state Exp;
+branches;
+next	1.24;
+
+1.24
+date	97.04.30.17.50.10;	author db;	state Exp;
+branches;
+next	1.23;
+
+1.23
+date	97.04.30.01.44.35;	author db;	state Exp;
+branches;
+next	1.22;
+
+1.22
+date	97.04.23.16.36.33;	author db;	state Exp;
+branches;
+next	1.21;
+
+1.21
+date	97.04.14.17.06.19;	author db;	state Exp;
+branches;
+next	1.20;
+
+1.20
+date	97.04.03.21.11.15;	author db;	state Exp;
+branches;
+next	1.19;
+
+1.19
+date	97.04.02.20.16.33;	author db;	state Exp;
+branches;
+next	1.18;
+
+1.18
+date	97.03.23.18.43.38;	author db;	state Exp;
+branches;
+next	1.17;
+
+1.17
+date	97.03.19.19.55.45;	author db;	state Exp;
+branches;
+next	1.16;
+
+1.16
+date	97.03.14.23.39.38;	author db;	state Exp;
+branches;
+next	1.15;
+
+1.15
+date	97.03.14.03.56.52;	author db;	state Exp;
+branches;
+next	1.14;
+
+1.14
+date	97.03.09.05.27.17;	author db;	state Exp;
+branches;
+next	1.13;
+
+1.13
+date	97.03.07.21.21.50;	author db;	state Exp;
+branches;
+next	1.12;
+
+1.12
+date	97.03.07.18.47.21;	author db;	state Exp;
+branches;
+next	1.11;
+
+1.11
+date	97.01.05.18.56.20;	author db;	state Exp;
+branches;
+next	1.10;
+
+1.10
+date	97.01.05.04.29.47;	author db;	state Exp;
+branches;
+next	1.9;
+
+1.9
+date	97.01.01.01.41.57;	author db;	state Exp;
+branches;
+next	1.8;
+
+1.8
+date	96.12.19.04.19.18;	author db;	state Exp;
+branches;
+next	1.7;
+
+1.7
+date	96.12.18.03.12.05;	author db;	state Exp;
+branches;
+next	1.6;
+
+1.6
+date	96.12.18.02.51.10;	author db;	state Exp;
+branches;
+next	1.5;
+
+1.5
+date	96.12.18.01.52.55;	author db;	state Exp;
+branches;
+next	1.4;
+
+1.4
+date	96.12.16.01.28.12;	author db;	state Exp;
+branches;
+next	1.3;
+
+1.3
+date	96.12.15.22.18.58;	author db;	state Exp;
+branches;
+next	1.2;
+
+1.2
+date	96.12.15.20.54.47;	author db;	state Exp;
+branches;
+next	1.1;
+
+1.1
+date	96.12.09.00.34.54;	author db;	state Exp;
+branches;
+next	;
+
+
+desc
+@bothunt code as used in tcm-dianora
+@
+
+
+1.29
+log
+@v0.4.2 release
+@
+text
+@/*
+** This code below is UGLY as sin and is not commented.  I would NOT use
+** it for the basis of anything real, as it is the worst example of data
+** structure misuse and abuse that I have ever SEEN much less written.
+** If you're looking for how to implement hash tables, don't look here.
+** If I had $100 for every time I looped thru every bucket of the hash
+** tables to process a user command, I could retire.  Any way, it may be
+** inefficient as hell when handling user commands, but it's fast and
+** much cleaner when handling the server notice traffic.  Since the server
+** notice traffic should outweigh commands to the bot by - oh like - 100
+** to 1 or more, I didn't care too much about inefficiencies and ugliness
+** in the stuff that processes user commands... I just wanted to throw it
+** together quickly.
+*/
+/*
+
+Original comments above by Hendrix...
+
+- Dianora
+*/
+
+/*
+
+  Some changes by -Dianora
+*/
+
+#include <stdio.h>
+#include <string.h>
+
+#ifdef LINUX
+#include <sys/time.h>
+#else
+#include <time.h>
+#endif
+
+#include <sys/types.h>
+#include <sys/time.h>
+#include "config.h"
+#include "tcm.h"
+
+static char *version="$Id: bothunt.c,v 1.28 1997/05/26 16:14:56 db Exp db $";
+
+#ifdef NEXT
+char *strdup(char *);
+#endif
+
+#define CONNECT 0
+#define EXITING 1
+/* CSr notice */
+#define CS_CLONES 2
+#define BOT 3
+#define TOOMANY 4
+#define NICKCHANGE 5
+/* CSr notice */
+#define CS_NICKFLOODING 6
+#define UNAUTHORIZED 7
+/* CSr notice */
+#define CS_CLONEBOT_KILLED 8
+/* CSr notice */
+#define CS_IDLER 9
+#define LINK_LOOK 10
+#define KLINE_ADD_REPORT 11	/* Toast */
+#define STATS 12
+
+#define YES 1
+#define NO  0
+
+#define HASHTABLESIZE 3001
+
+#define CLONECONNECTCOUNT 3
+#define CLONECONNECTFREQ  30
+
+#define CLONEDETECTINC 15
+#define MAXFROMHOST    50
+
+
+extern char mynick[];
+extern char defchannel[];
+extern char oper_nick_config[];
+extern char oper_pass_config[];
+extern char dfltnick[];
+extern struct connection connections[];
+
+#ifdef AUTOPILOT
+int autopilot=AUTOPILOT_DEFAULT;
+#endif
+
+char mychannel[MAX_CHANNEL];
+extern FILE *logging_fp;
+extern AUTH_FILE_ENTRY userlist[];
+extern int user_list_index;
+
+void list_nicks();	/* - Dianora as derived from list_users */
+void kill_list_users();	/* - phisher as derived from list_users */
+void list_users();	/* - hendrix */
+void privmsg();
+void onjoin();
+void onkick();
+void onnick();
+void onnicktaken();
+void cannotjoin();
+void ontraceuser();
+void onservnotice();	/* - Hendrix */
+void onctcp();
+void adduserhost();
+void kill_spoof();	/* - Dianora */
+void removeuserhost();
+void updateuserhost();
+void updatehash();	/* update a users nick */
+void checkhostclones();
+char *chopuh();			/* - Hendrix */
+void report_clones();
+void bot_reject();
+void logfailure();
+void check_nick_flood();	/* - Dianora */
+void cs_nick_flood();		/* - Dianora */
+void cs_clones();		/* - Dianora */
+void link_look_notice();	/* - Dianora */
+void init_nick_change_table();	/* - Dianora */
+void add_to_nick_change_table(); /* - Dianora */
+void report_nick_flooders();	/* - Dianora */
+void suggest_kline();		/* - Dianora */
+void kline_add_report(char *);		/* - Toast/Dianora */
+void kill_add_report(char *);		/* - Dianora/ThemBones */
+void stats_notice();		/* - Dianora */
+void initopers();		/* - Dianora */
+void add_oper();		/* - Dianora */
+
+char *msgs_to_mon[] = {
+  "Client connecting: ", 
+  "Client exiting: ",
+  "Unauthorized connection from ",
+/* CSr notice */
+  "Rejecting clonebot:",
+  "Too many connections from ",
+  "Nick change:",
+/* CSr notice */
+  "Nick flooding detected by:",
+  "Rejecting ",
+/* CSr notice */
+  "Clonebot killed:",
+/* CSr notice */
+  "Idle time limit exceeded for ",
+/* +th has "LINKS 'something usually blank' requested by " */
+/* *SIGH* - Dianora */
+  "LINKS ",
+/* non +th " requested by ", */
+  "KLINE ",	/* Just a place holder */
+  "STATS ",	/* look at stats ... */
+  NULL};
+
+/*
+Modifications by
+	- Dianora (db) db@@db.net
+
+*/
+
+typedef struct userentry {
+  char nick[MAX_NICK];
+  char user[11];
+  char host[MAX_HOST];
+  char domain[MAX_DOMAIN];
+  char link_count;
+  char isoper;
+  time_t connecttime;
+  time_t reporttime;
+  }USERENTRY;
+
+typedef struct hashrec
+  {
+    USERENTRY *info;
+    struct hashrec *collision;
+  }HASHREC;
+
+HASHREC *hosttable[HASHTABLESIZE];
+HASHREC *domaintable[HASHTABLESIZE];
+
+typedef struct sortarray {
+  struct userentry *domainrec;
+  int count;
+  }SORTARRAY;
+
+char doingtrace = NO;
+
+struct failrec {
+  char user[MAX_NICK+1];
+  char host[MAX_HOST];
+  int botcount;
+  int failcount;
+  struct failrec *next;
+  };
+
+struct failrec *failures = NULL;
+
+/* nick flood finding code - Dianora */
+
+#define NICK_CHANGE_TABLE_SIZE 100
+
+typedef struct nick_change_entry
+{
+  char *user_host;
+  char last_nick[MAX_NICK];
+  int  nick_change_count;
+  time_t first_nick_change;
+  time_t last_nick_change;
+  int noticed;
+}NICK_CHANGE_ENTRY;
+
+NICK_CHANGE_ENTRY *nick_changes[NICK_CHANGE_TABLE_SIZE];
+
+#define LINK_LOOK_TABLE_SIZE 10
+
+typedef struct link_look_entry
+{
+  char *user_host;
+  int  link_look_count;
+  time_t last_link_look;
+}LINK_LOOK_ENTRY;
+
+LINK_LOOK_ENTRY link_look[LINK_LOOK_TABLE_SIZE];
+
+/*
+oper()
+
+inputs		- NONE
+output		- NONE
+side effects	- With any luck, we oper this bot *sigh*
+*/
+
+void oper()
+{
+  char hold[MAX_BUFF];
+  
+  (void)sprintf(hold,"OPER %s %s\nMODE %s :+sckrn\n", 
+	  oper_nick_config, oper_pass_config, mynick);
+  toserv(hold);
+  amianoper = 1;
+}
+
+/*
+privmsg()
+
+inputs		- nick to send message to
+output		- NONE
+side effects	-	
+*/
+
+void privmsg (nick, userhost, text, output)
+     char *userhost, *nick, *text, *output;
+{
+  if (*text == '\001')
+    {
+      onctcp (nick, userhost, text);
+      return;
+    }
+  if (*output == '#' || *output == '&')
+    {
+      if (!strncasecmp(text,"clones",6))
+	report_clones(0);
+    }
+}
+
+/*
+onjoin()
+
+inputs		- nick, channel, as char string pointers	
+output		- NONE
+side effects	-
+*/
+
+void onjoin(nick,channel)
+char *nick,*channel;
+{
+  char hold[MAX_BUFF];
+
+  if (*channel == ':') ++channel;      /* 2.8 fix */
+  if (!strcmp(mynick,nick))
+    {
+      strncpy(mychannel,channel,MAX_CHANNEL-1);
+      mychannel[MAX_CHANNEL-1] = 0;
+      (void)sprintf(hold,"MODE %s +nt\n",mychannel);
+      toserv(hold);
+    }
+}
+
+void onkick(nick,channel)
+char *nick,*channel;
+{
+  if (!strcmp(mynick,nick))
+    {
+      join(mychannel);
+      *mychannel = 0;
+    }
+}
+
+void onnick(oldnick,newnick)
+char *oldnick,*newnick;
+{
+  if (*newnick == ':') ++newnick;      /* 2.8 fix */
+  if (!strcmp(oldnick,mynick))
+    strcpy(mynick,newnick);
+}
+
+void onnicktaken()
+{
+  char randnick[MAX_NICK];
+
+  (void)sprintf(randnick,"%s%1d",dfltnick, rand() % 10);
+  if (!*mychannel)
+    {
+      newnick(randnick);
+      strcpy(mynick,randnick);
+      join(defchannel); 
+    }
+  else if (strncmp(randnick,dfltnick,strlen(dfltnick)))
+    {
+      newnick(randnick);
+      strcpy(mynick,randnick);
+    }
+}
+
+void cannotjoin(channel)
+char *channel;
+{
+  char newchan[MAX_CHANNEL];
+  int i;
+
+  if (!strcmp(channel,defchannel))
+    (void)sprintf(newchan,"%.78s2",defchannel);
+  else
+    {
+      channel += strlen(defchannel);
+      i = atoi(channel);
+      (void)sprintf(newchan,"%.78s%1d",defchannel,i+1);
+    }
+  join(newchan);
+}
+
+/*
+ontraceuser()
+
+inputs		- traceline from server
+output		- NONE
+side effects	- user is added to hash tables
+
+
+texas went and modified the output of /trace in their irc server
+so that it appears as "nick [user@@host]" ontraceuser promptly
+threw out the "[user@@host]" part.. *sigh* I've changed the code
+here to check for a '[' right after a space, and not blow away
+the "[user@@host]" part. - Dianora
+
+*/
+
+void ontraceuser(traceline)
+char *traceline;
+{
+  char *nuh, *userhost;
+  char *p;		/* used to clean up trailing garbage */
+  int  isoper;
+
+  isoper = NO;
+
+  if (!doingtrace)
+    /* Code for mass version correlation goes here */
+    return;
+  printf("traceline = [%s]\n", traceline );
+  isoper = NO;
+  if(*traceline == 'O')
+    {
+      isoper = YES;
+      printf("oper found in trace\n");
+    }
+
+  nuh = strchr(traceline,' ');    /* Skip 'User' */
+  if (nuh)
+    {
+      nuh = strchr(nuh+1,' ');      /* Skip class */
+      if (nuh)
+	{
+	  ++nuh;
+	  userhost = strchr(nuh,' ');
+	  if (userhost)
+	    {
+	      printf("userhost = [%s]\n", userhost);
+	      if(userhost[1] != '[')
+		*userhost = '\0';
+	      else	/* clean up garbage */
+		{
+		  p = strchr(userhost+1,' ');
+		  if(p)
+		    *p = '\0';
+		}
+	    }
+	  userhost = chopuh(nuh);
+	  printf("nuh = [%s] userhost = [%s] isoper=%d\n",
+		 nuh, userhost,isoper);
+	  adduserhost(nuh,userhost,YES,isoper);
+	}
+    }
+}
+
+void ontraceclass()
+{
+  if (doingtrace)
+    {
+      doingtrace = NO;
+      join(defchannel);
+    }
+}
+
+/* - Dianora */
+/* 
+on_stats_o()
+
+inputs		- body of server message
+output		- none
+side effects	- user list of tcm is built up from stats O of tcm server
+
+  Some servers have some "interesting" O lines... lets
+try and filter some of the worst ones out.. I have seen 
+*@@* used in a servers O line.. (I will not say which, to protect
+the guilty)
+
+
+Thinking about this.. I think perhaps this code should just go away..
+Certainly, if you have REMOTE_KLINE etc. defined... You will need
+to add users to userlist.load anyway.
+
+  - Dianora
+*/
+
+void on_stats_o(body)
+char *body;
+{
+  char *user_at_host;
+  int non_lame_user_o;	/* If its not a wildcarded user O line... */
+  int non_lame_host_o;	/* If its not a wildcarded host O line... */
+  char *p;		/* pointer used to scan for valid O line */
+
+/* No point if I am maxed out going any further */
+  if( user_list_index == (MAXUSERS - 1))
+    return;
+
+  user_at_host = strtok(body," ");	/* discard the first little bit */
+  if(user_at_host == (char *)NULL)
+    return;
+
+  /* debugging cruft, i've just decided to leave in - Dianora */
+  printf("on_stats_o user_at_host now = [%s]\n", user_at_host );
+
+  user_at_host = strtok((char *)NULL," ");	/* NOW its u@@h */
+  if(user_at_host == (char *)NULL)
+    return;
+
+  printf("on_stats_o user_at_host now = [%s]\n", user_at_host );
+
+  p = user_at_host;
+  non_lame_user_o = NO;
+
+  while(*p)
+    {
+      if(*p == '@@')	/* Found the first part of "...@@" ? */
+	break;
+
+      if(*p != '*')	/* A non wild card found in the username? */
+	non_lame_user_o = YES;	/* GOOD a non lame user O line */
+      /* can't just break. I am using this loop to find the '@@' too */
+
+      p++;
+    }
+  
+  if(!non_lame_user_o)	/* LAME O line ignore it */
+    return;
+
+  p++;			/* Skip the '@@' */
+  non_lame_host_o = NO;
+
+  while(*p)
+    {
+      if(*p != '*')	/* A non wild card found in the hostname? */
+	non_lame_host_o = YES;	/* GOOD a non lame host O line */
+      p++;
+    }
+
+  if(non_lame_host_o)
+    {
+      /*
+	If this user is already loaded due to userlist.load
+	don't load them again. - Dianora
+      */
+      if( !isoper(user_at_host) )
+	{
+	  userlist[user_list_index].userathost = strdup(user_at_host);
+	  if(userlist[user_list_index].userathost == (char *)NULL)
+	    {
+	      fprintf(stderr,"memory allocation error in load_userlist()\n");
+	      exit(1);
+	    }
+	  userlist[user_list_index].usernick = (char *)NULL;
+	  userlist[user_list_index].password = (char *)NULL;
+	  userlist[user_list_index].type = TYPE_OPER;
+	  user_list_index++;
+	}
+    }
+}
+
+/* - Dianora */
+
+/*
+   Chop a string of form "nick [user@@host]" or "nick[user@@host]" into
+   nick and userhost parts.  Return pointer to userhost part.  Nick
+   is still pointed to by the original param.  Note that since [ is a
+   valid char for both nicks and usernames, this is non-trivial. */
+/* Also, for digi servers, added form of "nick (user@@host)" */
+
+/*
+Due to the fact texas net irc servers changed the output of the /trace
+command slightly, chopuh() was coring... I've made the code a bit
+more robust - Dianora
+
+A lot of this code would be simpler using strrchr()... I'll do it
+sometime... - Dianora
+
+*/
+
+char *chopuh(nickuserhost)
+char *nickuserhost;
+{
+  char *uh;
+  char *p;
+  char skip = NO;
+
+  /* If it's the first format, we have no problems */
+  uh = strchr(nickuserhost,' ');
+  if (!uh)
+    {
+      uh = strchr(nickuserhost,'[');
+      if( uh == (char *)NULL)	/* IT might be of form "nick (user@@host)"
+				   i.e. +th (digi) format */
+	{
+	  uh = strchr(nickuserhost,'(');	/* lets see... */
+	  if(uh == (char *)NULL)
+	    {					/* MESSED up GIVE UP */
+	      (void)fprintf(stderr,
+			    "You have VERY badly screwed up +c output!\n");
+	      (void)fprintf(stderr,
+			    "1st case nickuserhost = [%s]\n", nickuserhost);
+	      return((char *)NULL);	/*screwy...prolly core in the caller*/
+	    }
+	  p = strrchr(uh,')');
+	  if( p )
+	    *p = '\0';
+	  else
+	    {
+	      (void)fprintf(stderr,
+			    "You have VERY badly screwed up +c output!\n");
+	      (void)fprintf(stderr,
+			    "No ending ')' nickuserhost = [%s]\n",
+			    nickuserhost);
+	      /* No ending ')' found, but lets try it anyway */
+	    }
+	  return(uh);
+	}
+
+      if (strchr(uh+1,'['))
+	{
+	  /*moron has a [ in the nickname or username.  Let's do some AI crap*/
+	  uh = strchr(uh,'~');
+	  if (!uh)
+	    {
+	      /* No tilde to guess off of... means the lamer checks out with
+		 identd and has (more likely than not) a valid username.
+		 Find the last [ in the string and assume this is the
+		 divider, unless it creates an illegal length username
+		 or nickname */
+	      uh = nickuserhost + strlen(nickuserhost);
+	      while (--uh != nickuserhost)
+		if (*uh == '[' && *(uh+1) != '@@' && uh - nickuserhost < 10)
+		  break;
+	    }
+	  else
+	    {
+	      /* We have a ~ which is illegal in a nick, but also valid
+		 in a faked username.  Assume it is the marker for the start
+		 of a non-ident username, which means a [ should precede it. */
+	      if (*(uh-1) == '[')
+		--uh;
+	      else
+		/* Idiot put a ~ in his username AND faked identd.  Take the
+		   first [ that precedes this, unless it creates an
+		   illegal length username or nickname */
+		while (--uh != nickuserhost)
+		  if (*uh == '[' && uh - nickuserhost < 10)
+		    break;
+	    }
+	}
+    }
+  else
+    skip = YES;
+
+  *(uh++) = 0;
+  if (skip)
+    ++uh;                 /* Skip [ */
+  if (strchr(uh,' '))
+    *(strchr(uh,' ')) = 0;
+  if (uh[strlen(uh)-1] == '.')
+    uh[strlen(uh)-2] = 0;   /* Chop ] */
+  else
+    uh[strlen(uh)-1] = 0;   /* Chop ] */
+  return uh;
+}
+
+/*
+onservnotice()
+
+inputs		- message from server
+output		- NONE
+side effects	-
+*/
+
+void onservnotice(notice)
+char *notice;
+{
+  int i = -1;
+  char *userhost;
+
+  while (msgs_to_mon[++i])
+    if (!strncmp(notice,msgs_to_mon[i],strlen(msgs_to_mon[i])))
+      {
+	notice += strlen(msgs_to_mon[i]);
+	break;
+      }
+
+  /* Kline notice requested by Toast */
+  if (strstr(notice, "added K-Line for"))
+    kline_add_report(notice);
+
+  if (strstr(notice, "KILL message for"))
+    kill_add_report(notice);
+
+#ifdef NOT_TH
+  if (strstr(notice, "is now operator"))
+    add_oper(notice);
+#endif
+
+  switch (i)
+    {
+    case CONNECT:
+      userhost = chopuh(notice);
+      adduserhost(notice,userhost,NO,NO);
+      break;
+    case EXITING:
+      userhost = chopuh(notice);
+      removeuserhost(notice,userhost);
+      break;
+    case BOT:
+      bot_reject(notice);
+      break;
+    case UNAUTHORIZED:
+    case TOOMANY:
+      logfailure(notice,0);
+      break;
+    case NICKCHANGE:	/* - Dianora */
+      check_nick_flood(notice);
+      break;
+/* CS style of reporting nick flooding */
+    case CS_NICKFLOODING:	/* - Dianora */
+      cs_nick_flood(notice);
+      break;
+    case CS_CLONES:
+    case CS_CLONEBOT_KILLED:
+      cs_clones(notice);
+      break;
+    case LINK_LOOK:
+      link_look_notice(notice);
+      break;
+#ifndef OTHERNET
+    case STATS:
+      stats_notice(notice);
+      break;
+#endif
+    default:
+      break;
+    }
+}
+
+void onctcp(nick, userhost, text)
+char *nick, *userhost, *text;
+{
+  char *hold;
+  char dccbuff[DCCBUFF_SIZE];
+  char notice_buff[MAX_BUFF];
+
+  dccbuff[0] = '#';
+  ++text;
+  if (!strncasecmp(text,"PING",4))
+    notice(nick,text-1);
+  else if (!strncasecmp(text,"VERSION",7)) {
+    (void)sprintf(notice_buff,"\001VERSION %s\001",VERSION1);
+    notice(nick,notice_buff);
+    (void)sprintf(notice_buff,"\001VERSION %s\001",VERSION2);
+    notice(nick,notice_buff);
+#ifdef AUTO_KLINE
+    (void)sprintf(notice_buff,"\001VERSION %s\001",VERSION3);
+    notice(nick,notice_buff);
+#endif
+    }
+  else if (!strncasecmp(text,"DCC CHAT",8)) {
+    text += 9;
+    hold = strchr(text,' ');  /* Skip word 'Chat' */
+    if (hold) {
+      text = hold+1;
+      hold = strchr(text,' ');
+      if (hold) {
+        *(hold++) = ':';
+        strncpy(dccbuff+1,text,119);
+        if (atoi(hold) < 1024)
+          notice(nick,"Invalid port specified for DCC CHAT.  Not funny.");
+        else if (!makeconn(dccbuff,nick,userhost))
+          notice(nick,"DCC CHAT connection failed");
+        return;
+        }
+      }
+    notice(nick,"Unable to DCC CHAT.  Invalid protocol.");
+    }
+}
+
+int hash_func(string)
+char *string;
+{
+  long i;
+
+  i = *(string++);
+  if (*string)
+    i |= (*(string++) << 8);
+    if (*string)
+      i |= (*(string++) << 16);
+      if (*string)
+        i |= (*string << 24);
+  return i % HASHTABLESIZE;
+}
+
+void addtohash(table,key,item)
+HASHREC *table[];
+char *key;
+USERENTRY *item;
+{
+  int index;
+  HASHREC *newhashrec;
+
+  index = hash_func(key);
+  newhashrec = (HASHREC *)malloc(sizeof(HASHREC));
+  if(newhashrec == (HASHREC *)NULL)
+    {
+      prnt(connections[0].socket,"Ran out of memory in addtohash\n");
+      sendtoalldcc("Ran out of memory in addtohash",SEND_ALL_USERS);
+      gracefuldie();
+    }
+
+  newhashrec->info = item;
+  newhashrec->collision = table[index];
+  table[index] = newhashrec;
+}
+
+
+/*
+removefromhash()
+
+
+	fixed memory leak here...
+	make sure don't free() an already free()'ed info struct
+	- Dianora
+*/
+
+char removefromhash(table,key,hostmatch,usermatch,nickmatch)
+HASHREC *table[];
+char *key, *hostmatch, *usermatch, *nickmatch;
+{
+  int index;
+  HASHREC *find, *prev;
+
+  index = hash_func(key);
+  find = table[index];
+  prev = (HASHREC *)NULL;
+
+  while (find)
+    {
+      if ((!hostmatch || !strcmp(find->info->host,hostmatch)) &&
+	  (!usermatch || !strcmp(find->info->user,usermatch)) &&
+	  (!nickmatch || !strcmp(find->info->nick,nickmatch)))
+	{
+	  if (prev)
+	    prev->collision = find->collision;
+	  else
+	    table[index] = find->collision;
+
+	  if(find->info->link_count > 0)
+	    find->info->link_count--;
+
+	  /* debug output that can be removed some time - Dianora */
+	  printf("find->info->link_count = %d\n", find->info->link_count );
+
+	  if(find->info->link_count == 0)
+	    {
+	      (void)free(find->info); /* shouldn't this be freed too? - Dianora */
+	      /* deubg output that can be removed some time - Dianora */
+	      printf("link_count is 0 free() now\n");
+	    }
+	  (void)free(find);
+	  return 1;
+	}
+      prev = find;
+      find = find->collision;
+    }
+  return 0;
+}
+
+#ifdef NOT_TH
+/*
+add_oper
+
+input		- nick
+output		- NONE
+side effects	- none
+*/
+void add_oper(notice)
+char *notice;
+{
+  int i;
+  char *nick;
+  HASHREC *userptr;
+
+  nick = strtok(notice," ");
+  if(nick == (char *)NULL)
+    return;
+
+  for (i=0;i<HASHTABLESIZE;++i)
+    {
+      userptr = domaintable[i];
+      while (userptr)
+	{
+	  if( strcasecmp(userptr->info->nick, nick) == 0 )
+	    {
+	      userptr->info->isoper = YES;
+	      return;
+	    }
+	  userptr = userptr->collision;
+	}
+    }
+}
+#endif
+
+/*
+updateuserhost()
+
+inputs -
+output - NONE
+side effects 
+	     - A user has changed nicks. update the nick
+	       as seen by the hosttable. This way, list command
+	       will show the updated nick.
+*/
+
+void updateuserhost(nick1,nick2,userhost)
+char *nick1,*nick2,*userhost;
+{
+  char *tmp, iphold[20];
+  char *domain;
+  char founddot = 0;
+  int i = 0;
+
+  tmp = strchr(userhost,'@@');
+  if (!tmp)
+    return;
+  *(tmp++) = 0;
+
+  /* Determine the domain name */
+  domain = tmp + strlen(tmp) - 1;
+  if (isdigit(*domain))
+    {
+      /* IP */
+      domain = tmp;
+      while (*domain)
+	{
+	  iphold[i++] = *domain;
+	  if( *(domain++) == '.' )
+	    founddot++;
+	  if(founddot == 3 )
+	    break;
+
+	/*
+	if (*(domain++) == '.' && founddot++)
+	  break;
+	  */
+	}
+      iphold[i] = '\0';
+      domain = iphold;
+    }
+  else
+    /* FQDN */
+    while (--domain != tmp)
+      if (*domain == '.' && founddot++)
+        break;
+
+  updatehash(hosttable,tmp,nick1,nick2);
+}
+
+/*
+updatehash
+
+inputs	- has table to update
+	- key to use
+	- nick1, nick2 nick changes
+output	- NONE
+side effects -
+	  user entry nick is updated if found
+*/
+
+void updatehash(table,key,nick1,nick2)
+HASHREC *table[];
+char *key, *nick1, *nick2;
+{
+  int index;
+  HASHREC *find, *prev;
+
+  index = hash_func(key);
+  find = table[index];
+
+  while (find)
+    {
+      if( strcmp(find->info->nick,nick1) == 0 )
+	{
+	  strncpy(find->info->nick,nick2,MAX_NICK);
+	}
+      find = find->collision;
+    }
+}
+
+void removeuserhost(nick,userhost)
+char *nick,*userhost;
+{
+  char *tmp, iphold[20];
+  char *domain;
+  char founddot = 0;
+  int i = 0;
+
+  tmp = strchr(userhost,'@@');
+  if (!tmp)
+    return;
+  *(tmp++) = 0;
+
+  /* Determine the domain name */
+  domain = tmp + strlen(tmp) - 1;
+  if (isdigit(*domain))
+    {
+      /* IP */
+      domain = tmp;
+      while (*domain)
+	{
+	  iphold[i++] = *domain;
+	  if( *(domain++) == '.' )
+	    founddot++;
+	  if(founddot == 3 )
+	    break;
+
+	  /*
+	  if (*(domain++) == '.' && founddot++)
+	    break;
+	    */
+
+	}
+      iphold[i] = '\0';
+      domain = iphold;
+    }
+  else
+    /* FQDN */
+    while (--domain != tmp)
+      if (*domain == '.' && founddot++)
+        break;
+
+  if (!removefromhash(hosttable,tmp,tmp,userhost,nick))
+    if (!removefromhash(hosttable,tmp,tmp,userhost,(char *)NULL))
+      printf("*** Error removing %s!%s@@%s from host table!\n",nick,userhost,tmp);
+
+  if (!removefromhash(domaintable,domain+1,tmp,userhost,nick))
+    if (!removefromhash(domaintable,domain+1,tmp,userhost,(char *)NULL))
+      printf("*** Error removing %s!%s@@%s from domain table!\n",nick,userhost,tmp);
+}
+
+
+/*
+adduserhost()
+
+inputs		- nick
+		- user@@host
+		- from a trace YES or NO
+		- is this user an oper YES or NO
+output		- NONE
+side effects	-
+
+These days, its better to show host IP's as class C
+- Dianora
+*/
+
+void adduserhost(nick,userhost,fromtrace,isoper)
+char *nick,*userhost;
+int fromtrace;
+int isoper;
+{
+  USERENTRY *newuser;
+  char *host, iphold[20];
+  char *domain;
+  char founddot = 0;
+  int i = 0;
+  char *p;
+  char *user = userhost;
+
+  host = strrchr(userhost,'@@');
+  if (!host)
+    return;
+  *(host++) = '\0';
+
+/*
+ *sigh* catch some obvious dns spoofs, I won't be able
+ to do much more for now, until later 
+ basically, at least throw off users with a top level domain
+ with more than 3 characters in it, throw off users with a '*' or '@@'
+ in hostpart.
+
+ - Dianora 
+*/
+
+  p = strrchr(host,'.');
+  if(p)
+    {
+      int len;
+
+      p++;
+      len = strlen(p);
+      if(len > 3)
+	{
+	  kill_spoof(nick);
+	  return;
+	}
+
+      if(len == 3)
+	{
+	  int legal_top_level=NO;
+
+	  if(strcasecmp(p,"net")==0)legal_top_level = YES;
+	  if(strcasecmp(p,"com")==0)legal_top_level = YES;
+	  if(strcasecmp(p,"org")==0)legal_top_level = YES;
+	  if(strcasecmp(p,"gov")==0)legal_top_level = YES;
+	  if(strcasecmp(p,"edu")==0)legal_top_level = YES;
+	  if(strcasecmp(p,"mil")==0)legal_top_level = YES;
+	  if(strcasecmp(p,"int")==0)legal_top_level = YES;
+
+	  if(isdigit(*p) && isdigit(*(p+1)) && isdigit(*(p+2)) )
+	     legal_top_level = YES;
+
+	  if(!legal_top_level)
+	    {
+	      kill_spoof(nick);
+	      return;
+	    }
+	}
+    }
+
+  if(strchr(host,'@@'))
+    {
+      kill_spoof(nick);
+      return;
+    }
+
+  if(strchr(host,'*'))
+    {
+      kill_spoof(nick);
+      return;
+    }
+
+  if(strchr(host,'?'))
+    {
+      kill_spoof(nick);
+      return;
+    }
+
+  newuser = (USERENTRY *)malloc(sizeof(USERENTRY));
+  if( newuser == (USERENTRY *)NULL)
+    {
+      prnt(connections[0].socket,"Ran out of memory in adduserhost\n");
+      sendtoalldcc("Ran out of memory in adduserhost",SEND_ALL_USERS);
+      gracefuldie();
+    }
+
+  strncpy(newuser->nick,nick,MAX_NICK);
+  newuser->nick[MAX_NICK-1] = '\0';
+  strncpy(newuser->user,user,11);
+  newuser->user[MAX_NICK] = '\0';
+  strncpy(newuser->host,host,MAX_HOST);
+  newuser->host[MAX_HOST-1] = '\0';
+  newuser->connecttime = (fromtrace ? 0 : time(NULL));
+  newuser->reporttime = 0;
+  newuser->link_count = 2;
+  newuser->isoper = isoper;
+
+  /* Determine the domain name */
+  domain = host + strlen(host) - 1;
+  if (isdigit(*domain))
+    {
+      /* IP */
+      domain = host;
+      while (*domain)
+	{
+	  iphold[i++] = *domain;
+	  if( *(domain++) == '.' )
+	    founddot++;
+	  if(founddot == 3 )
+	    break;
+	  /*
+	  if (*(domain++) == '.' && founddot++)
+	    break;
+	    */
+	}
+      iphold[i] = '\0';
+      domain = iphold;
+    }
+  else
+    /* FQDN */
+    while (--domain != host)
+      if (*domain == '.' && founddot++)
+        break;
+  strncpy(newuser->domain,(*domain=='.' ? domain+1 : domain),MAX_DOMAIN);
+  newuser->domain[MAX_DOMAIN-1] = '\0';
+
+  /* Add it to the hash tables */
+  addtohash(hosttable, host, newuser);
+  addtohash(domaintable, domain+1, newuser);
+
+  /* Clonebot check */
+  if (!fromtrace)
+    checkhostclones(host);
+}
+
+/*
+kill_spoof
+
+input	- nick
+output	- none
+side effects - lamer is killed
+*/
+
+void kill_spoof(nick)
+char *nick;
+{
+  char hold[MAX_BUFF];
+  char notice[MAX_BUFF];
+
+  (void)sprintf(hold,"KILL %s :dns spoof\n",
+		nick);
+  toserv(hold);
+
+
+  (void)sprintf(notice,"dns spoofer %s",nick);
+  sendtoalldcc(notice,SEND_ALL_USERS);
+}
+
+void inithash()
+{
+  int i;
+
+  for (i=0;i<HASHTABLESIZE;++i)
+    hosttable[i] = domaintable[i] = (HASHREC *)NULL;
+  doingtrace = YES;
+  toserv("TRACE\n");
+}
+
+/* - Dianora */
+/*
+initopers()
+
+inputs		- NONE
+output		- NONE
+side effects	-
+
+*/
+
+void initopers()
+{
+  clear_userlist();
+  load_userlist();
+  toserv("STATS O\n");
+}
+
+/* - Dianora */
+
+/*
+*/
+
+void checkhostclones(host)
+char *host;
+{
+  HASHREC *find;
+  int clonecount = 0;
+  int reportedclones = 0;
+  char *last_user="";
+  int last_identd,current_identd;
+  int different;
+  time_t now, lastreport, oldest;
+  char notice1[MAX_BUFF];
+  char notice[MAX_BUFF];
+  struct tm *tmrec;
+  int index;
+
+  oldest = now = time(NULL);
+  lastreport = 0;
+  index = hash_func(host);
+  find = hosttable[index];
+
+  while (find)
+    {
+      if (!strcmp(find->info->host,host) &&
+	  (now - find->info->connecttime < CLONECONNECTFREQ + 1))
+	if (find->info->reporttime > 0)
+	  {
+	    ++reportedclones;
+	    if (lastreport < find->info->reporttime)
+	      lastreport = find->info->reporttime;
+	  }
+	else
+	  {
+	    ++clonecount;
+	    if (find->info->connecttime < oldest)
+	      oldest = find->info->connecttime;
+	  }
+      find = find->collision;
+    }
+
+  if ((reportedclones == 0 && clonecount < CLONECONNECTCOUNT) ||
+      now - lastreport < 10)
+    return;
+
+  initlog();
+
+  if (reportedclones)
+    {
+      (void)sprintf(notice,"%d more possible clones (%d total) from %s:",
+            clonecount, clonecount+reportedclones, host);
+
+      if(logging_fp)
+	{
+	  fprintf(logging_fp,"%d more possible clones (%d total) from %s:\n",
+            clonecount, clonecount+reportedclones, host);
+	}
+
+    }
+  else
+    {
+      (void)sprintf(notice,
+	      "Possible clones from %s detected: %d connects in %d seconds",
+	      host, clonecount, now - oldest);
+
+      if(logging_fp)
+	fprintf(logging_fp,
+	       "Possible clones from %s detected: %d connects in %d seconds\n",
+		host, clonecount, now - oldest);
+    }
+
+  msg(mychannel,notice);
+  sendtoalldcc(notice,SEND_ALL_USERS);
+
+  clonecount = 0;
+  find = hosttable[index];
+
+  while (find)
+    {
+    if (!strcmp(find->info->host,host) &&
+        (now - find->info->connecttime < CLONECONNECTFREQ + 1) &&
+        find->info->reporttime == 0)
+      {
+	++clonecount;
+	tmrec = localtime(&find->info->connecttime);
+
+	if(clonecount == 1)
+	  {
+	    (void)sprintf(notice1,"  %s is %s@@%s (%2.2d:%2.2d:%2.2d)",
+		    find->info->nick, find->info->user, find->info->host,
+		    tmrec->tm_hour, tmrec->tm_min, tmrec->tm_sec);
+	  }
+	else
+	  {
+	    (void)sprintf(notice,"  %s is %s@@%s (%2.2d:%2.2d:%2.2d)",
+		    find->info->nick, find->info->user, find->info->host,
+		    tmrec->tm_hour, tmrec->tm_min, tmrec->tm_sec);
+	  }
+
+	last_identd = current_identd = YES;
+        different = NO;
+
+	if(clonecount == 1)
+	  last_user = find->info->user;
+	else if(clonecount == 2)
+	  {
+	    char *current_user;
+
+	    if( *last_user == '~' )
+	      {
+		last_user++;
+		last_identd = NO;
+	      }
+
+	    current_user = find->info->user;
+	    if( *current_user == '~' )
+	      {
+		current_user++;
+		current_identd = NO;
+	      }
+
+	    if(strcmp(last_user,current_user) != 0)
+	      different = YES;
+
+	    suggest_kline(YES,
+			  find->info->user,
+			  find->info->host,
+			  different,
+			  last_identd|current_identd,
+			  "clones");
+
+	  }
+
+	find->info->reporttime = now;
+	if(clonecount == 1)
+	  ;
+	else if(clonecount == 2)
+	  {
+	    msg(mychannel,notice1);
+	    sendtoalldcc(notice1,SEND_ALL_USERS);
+
+	    if(logging_fp)
+	      {
+		fputs(notice1,logging_fp);
+		fputc('\n',logging_fp);
+	      }
+
+	    msg(mychannel,notice);
+	    sendtoalldcc(notice,SEND_ALL_USERS);
+
+	    if(logging_fp)
+	      {
+		fputs(notice,logging_fp);
+		fputc('\n',logging_fp);
+	      }
+	  }
+	else if (clonecount < 5)
+	  {
+	    msg(mychannel,notice);
+	    sendtoalldcc(notice,SEND_ALL_USERS);
+
+	    if(logging_fp)
+	      {
+		fputs(notice,logging_fp);
+		fputc('\n',logging_fp);
+	      }
+	  }
+	else if (clonecount == 5)
+	  {
+	    msg(mychannel,"  [etc.]");
+	    sendtoalldcc(notice,SEND_ALL_USERS);
+	    if(logging_fp)
+	      {
+		fputs("  [etc.]\n",logging_fp);
+	      }
+	  }
+      }
+    find = find->collision;
+    }
+
+  if(logging_fp)
+    {
+      (void)fclose(logging_fp);
+      logging_fp = (FILE *)NULL;
+    }
+}
+
+/*
+suggest_kline
+
+  Suggest a kline for an oper to use
+inputs	- user user name
+	  host host name
+	  different whether last username matches first users name
+	  reason for kline
+output	- none
+side effects
+	connected opers are dcc'ed a suggested kline
+
+  I have to reassemble user and host back into a u@@h, in order
+to do matching of users not to KILL or KLINE. urgh. This seems
+silly as I have had to split them elsewhere. 
+
+	- Dianora 
+*/
+
+void suggest_kline(kline,user,host,different,identd,reason)
+int kline;	/* kline or not */
+char *user;
+char *host;
+int different;
+int identd;
+char *reason;
+{
+  char notice[MAX_BUFF];
+#ifdef AUTO_KLINE
+  char userathost[2*MAX_HOST];	/* ARGH, now I have to reassemble u@@h */
+  char hold[MAX_BUFF];
+#endif
+  char *work_host;	/* copy of the host name */
+  char *suggested_host;	/* what will be suggested as host to kline */
+  char *p;
+  char *q;
+  int number_of_dots=0;	/* how many dots in the name ? */
+  int ip_number = YES;
+  time_t current_time;
+  struct tm *broken_up_time;
+
+#ifdef AUTO_KLINE
+  hold[0] = '\0';	
+
+  /* urgh.. dumb dumb dumb ... - Dianora */
+
+
+  strncpy(userathost,user,MAX_HOST-2); /* to ensure no buffer overruns -sigh-*/
+  strcat(userathost,"@@");
+  strncat(userathost,host,MAX_HOST); 
+				     
+#endif
+
+  notice[0] = '\0';
+
+/* 
+  Ugh. with the advent of dns spoofing, I'll have to be a little
+  more careful with auto kline code. one lamer with a host name
+  of "*.*" came on irc2.magic.ca and nearly klined the entire server...
+  - Dianora
+*/
+
+  p = strchr(host,'*');
+  if(p)
+    {
+      (void)sprintf(notice,"Bogus dns spoofed host %@@%s",user,host);
+      msg(mychannel,notice);
+      sendtoalldcc(notice,SEND_ALL_USERS);
+      return;
+    }
+
+  p = strchr(host,'?');
+  if(p)
+    {
+      (void)sprintf(notice,"Bogus dns spoofed host %@@%s",user,host);
+      msg(mychannel,notice);
+      sendtoalldcc(notice,SEND_ALL_USERS);
+      return;
+    }
+
+  work_host = strdup(host);
+  if(work_host == (char *)NULL)
+    {
+      (void)sprintf(notice,"Ran out of memory in suggest_kline");
+      msg(mychannel,notice);
+      sendtoalldcc(notice,SEND_ALL_USERS);
+      gracefuldie();
+    }
+
+  p = q = work_host;
+
+  while(*p)
+    {
+      if(*p == '.')
+	number_of_dots++;
+      else if( !isdigit(*p) )
+	ip_number = NO;
+      p++;
+    }    
+
+  if(number_of_dots != 3)
+    ip_number = NO;
+
+  if(ip_number)
+    {
+      while(*p != '.')
+        {
+	  p--;
+	  if( p == q )	/* JUST in case */
+	    break;
+	}
+      *p++ = '.';	/* should already be a '.' right here, but... */
+      *p++ = '*';
+      *p = '\0';
+    }
+  else
+    {
+/*
+  
+*/
+      if(number_of_dots > 1)	/* Is it "some.host.dom" or just
+				   "somehost.dom" ? if only one dot
+				   it's the second form */
+	{
+	  while(*q != '.')
+	    {
+	      q++;
+	      if( *q == '\0' ) /* JUST in case */
+		break;
+	    }
+
+	  p = q;
+
+	  while(*p)
+	    p++;
+	  while(*p != '.')
+	    p--;
+	  p++;
+/*
+  I am now at the end of the hostname. the last little bit is the
+  top level domain. if its only two letters, then its a country
+  domain, and I have to rescan
+*/
+	  if(strlen(p) != 3)	/* *sigh* try again */
+	    {
+	      q = work_host;
+	      if(number_of_dots > 2)
+		{
+		  while(*q != '.')
+		    {
+		      q++;
+		      if( *q == '\0' ) /* JUST in case */
+			break;
+		    }
+		  q--;
+		  *q = '*';
+		}
+	    }
+	  else
+	    {
+	      q--;
+	      *q = '*';
+	    }
+	}
+    }
+
+  suggested_host = q;
+
+  current_time = time((time_t *)NULL);
+  broken_up_time = localtime(&current_time);
+
+  if(different)
+    {
+      if(identd)
+	{
+
+  /* added Auto k-line 9/6/96 Phisher dkemp@@frontiernet.net */
+/* After adding Auto k-line, I thought it might be nice to compare 
+   first to a hosttable so we aren't klining our own users etc. - Phisher
+
+   Wouldn't hurt to make sure they aren't an oper too
+   - Dianora
+*/
+         if ( (!okhost(userathost)) && (!isoper(userathost)))  
+	    {
+	      (void)sprintf(notice,
+			    "/quote kline *@@%s :%s %02d/%02d/%02d",
+			    host,reason,
+			    (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+			    broken_up_time->tm_year);
+	    }
+	  else
+	    {
+#ifndef DONT_WARN_OUR_CLONES
+	      (void)sprintf(notice,
+			    "/quote kline *@@%s :%s %02d/%02d/%02d",
+			    host,reason,
+			    (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+			    broken_up_time->tm_year);
+#endif
+	    }
+
+	 /* Just always log 'em for now */
+
+	  if(logging_fp)
+	    fprintf(logging_fp,"/quote kline *@@%s :%s %02d/%02d/%02d\n",
+		    host,reason,
+		    (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+		    broken_up_time->tm_year);
+	}
+      else
+	{
+          if ( (!okhost(userathost)) && (!isoper(userathost)) )  
+	    {
+#ifdef AUTO_KLINE
+	      if(autopilot && kline)
+		{
+		  (void)sprintf(notice,
+			  "Adding Auto Kline for ~*@@%s :%s %02d/%02d/%02d",
+			  suggested_host,reason,
+			  (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+			  broken_up_time->tm_year);
+
+		  (void)sprintf(hold,
+			  "KLINE ~*@@%s :Auto-kline, %s %02d/%02d/%02d\n",
+			  suggested_host,reason,
+			  (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+			  broken_up_time->tm_year);
+		}
+	      else
+#endif
+		{
+		  (void)sprintf(notice,
+			  "/quote kline ~*@@%s :%s %02d/%02d/%02d",
+			  suggested_host,reason,
+			  (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+			  broken_up_time->tm_year);
+		}
+	    }
+	  else
+	    {
+#ifndef DONT_WARN_OUR_CLONES
+	      (void)sprintf(notice,
+		      "/quote kline ~*@@%s :%s %02d/%02d/%02d",
+		      suggested_host,reason,
+		      (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+		      broken_up_time->tm_year);
+#endif
+	    }
+
+/* Just log 'em for now */
+
+	  if(logging_fp)
+	    fprintf(logging_fp,"/quote kline ~*@@%s :%s %02d/%02d/%02d\n",
+		    suggested_host,reason,
+		    (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+		    broken_up_time->tm_year);
+	}
+    }
+  else
+    {
+      if(*user == '~') /* see if failed ident */
+	user++;
+
+      if ( (!okhost(userathost)) && (!isoper(userathost)) )  
+	 {
+	   (void)sprintf(notice,
+			 "/quote kline *%s@@%s :%s %02d/%02d/%02d",
+			 user,suggested_host,reason,
+			 (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+			 broken_up_time->tm_year);
+	 }
+      else
+	{
+#ifndef DONT_WARN_OUR_CLONES
+	  (void)sprintf(notice,
+		  "/quote kline *%s@@%s :%s %02d/%02d/%02d",
+		  user,suggested_host,reason,
+		  (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+		  broken_up_time->tm_year);
+#endif
+	}
+
+/* Just log 'em for now */
+
+      if(logging_fp)
+	fprintf(logging_fp,"/quote kline *%s@@%s :%s %02d/%02d/%02d\n",
+	       user,suggested_host,reason,
+	       (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+	       broken_up_time->tm_year);
+    }
+
+  if(notice[0] != '\0')
+    {
+      msg(mychannel,notice);
+      sendtoalldcc(notice,SEND_ALL_USERS);
+    }
+
+#ifdef AUTO_KLINE
+/* Don't send anything to server if nothing */
+  if(hold[0] != '\0')
+    toserv(hold);
+#endif
+
+  (void)free(work_host);
+}
+
+/*
+report_nick_flooders
+
+inputs - socket to use
+output - NONE
+side effects -
+	list of current nick flooders is reported
+
+
+  Read the comment in add_to_nick_change_table as well.
+
+	- Dianora
+*/
+
+void report_nick_flooders(socket)
+int socket;
+{
+  int i;
+  NICK_CHANGE_ENTRY *ncp;
+  char outmsg[MAX_BUFF];
+  int reported_nick_flooder= NO;
+  time_t current_time;
+
+  current_time = time((time_t *)NULL);
+
+  for(i = 0; i < NICK_CHANGE_TABLE_SIZE; i++)
+    {
+      if(ncp = nick_changes[i])
+	{
+	  time_t time_difference;
+	  int time_ticks;
+
+	  time_difference = current_time - ncp->last_nick_change;
+
+	  /* is it stale ? */
+	  if( time_difference >= NICK_CHANGE_T2_TIME )
+	    {
+	      (void)free(ncp->user_host);
+	      (void)free(nick_changes[i]);
+	      nick_changes[i] = (NICK_CHANGE_ENTRY *)NULL;
+	    }
+	  else
+	    {
+	      /* how many 10 second intervals do we have? */
+	      time_ticks = time_difference / NICK_CHANGE_T1_TIME;
+
+	      /* is it stale? */
+	      if(time_ticks >= ncp->nick_change_count)
+		{
+		  (void)free(ncp->user_host);
+		  (void)free(nick_changes[i]);
+		  nick_changes[i] = (NICK_CHANGE_ENTRY *)NULL;
+		}
+	      else
+		{
+		  /* just decrement 10 second units of nick changes */
+		  ncp->nick_change_count -= time_ticks;
+		  if(ncp->nick_change_count > 1)
+		    {
+		      (void)sprintf(outmsg,
+				    "user: %s (%s) %d in %d\n",
+				    ncp->user_host,
+				    ncp->last_nick,
+				    ncp->nick_change_count,
+				    ncp->last_nick_change-ncp->first_nick_change);
+		      reported_nick_flooder = YES;
+		      if(socket)
+			prnt(socket,outmsg);
+		    }
+		}
+	    }
+	}
+    }
+
+  if(!reported_nick_flooder)
+    {
+      (void)sprintf(outmsg,"No nick flooders found\n");
+      if(socket)
+	prnt(socket,outmsg);
+    }
+}
+
+/*
+report_domains
+intput 		- socket
+		- num
+output		- NONE
+side effects	-
+*/
+
+
+/* allocating this much onn the stack makes me queasy
+   so for now, I'll define it in the data segment even
+   though it really should be malloc() 
+   - Dianora
+*/
+
+struct sortarray sort[MAXDOMAINS];
+
+void report_domains(socket,num)
+int socket;
+int num;
+{
+  struct hashrec *userptr;
+
+  int inuse = 0;
+  int i,j,maxx,found,foundany = 0;
+  char outmsg[MAX_BUFF];
+
+  for (i=0;i<HASHTABLESIZE;++i) {
+    userptr = hosttable[i];
+    while (userptr) {
+      for (j=0;j<inuse;++j)
+        if (!strcasecmp(userptr->info->domain,sort[j].domainrec->domain))
+          break;
+      if (j == inuse && inuse < MAXDOMAINS) {
+        sort[inuse].domainrec = userptr->info;
+        sort[inuse++].count = 1;
+        }
+      else
+        ++sort[j].count;
+      userptr = userptr->collision;
+      }
+    }
+  /* Print 'em out from highest to lowest */
+  for (;;) {
+    maxx = num-1;
+    found = -1;
+    for (i=0;i<inuse;++i)
+      if (sort[i].count > maxx) {
+        found = i;
+        maxx = sort[i].count;
+        }
+    if (found == -1)
+      break;
+    if (!foundany++)
+      prnt(socket,"Domains with most users on the server:\n");
+    (void)sprintf(outmsg,
+		  "  %-40s %3d users\n",sort[found].domainrec->domain,maxx);
+    prnt(socket,outmsg);
+    sort[found].count = 0;
+    }
+  if (!foundany)
+    {
+      (void)sprintf(outmsg,
+		    "No domains have %d or more users.\n",num);
+      prnt(socket,outmsg);
+    }
+}
+
+void massversion(socket)
+int socket;
+{
+  prnt(socket,"Cannot currently mass version\n");
+}
+
+void report_multi(socket)
+int socket;
+{
+  struct hashrec *userptr,*top,*temp;
+  int numfound,i;
+  char notip, foundany = 0;
+  char outmsg[MAX_BUFF];
+
+  for (i=0;i<HASHTABLESIZE;++i) {
+    top = userptr = domaintable[i];
+    while (userptr) {
+      numfound = 0;
+      /* Ensure we haven't already checked this user & domain */
+      temp = top;
+      while (temp != userptr)
+        if (!strcmp(temp->info->user,userptr->info->user) &&
+            !strcmp(temp->info->domain,userptr->info->domain))
+          break;
+        else
+          temp = temp->collision;
+      if (temp == userptr) {
+        temp = temp->collision;
+        while (temp)
+	  {
+	    if (!strcmp(temp->info->user,userptr->info->user) &&
+		!strcmp(temp->info->domain,userptr->info->domain))
+	      numfound++;	/* - zaph & Dianora :-) */
+	    temp = temp->collision;
+          }
+        if (numfound)
+	  {
+	    if (!foundany++)
+	      prnt(socket,"Multiple clients from the following userhosts:\n");
+	    notip = strncmp(userptr->info->domain,userptr->info->host,
+			    strlen(userptr->info->domain)) ||
+	      (strlen(userptr->info->domain) == strlen(userptr->info->host));
+	    numfound++;	/* - zaph and next line*/
+	    (void)sprintf(outmsg,
+		    " %s %2d connections -- %s@@%s%s\n",
+		    (numfound > 2) ? "==>" : "   ",numfound,userptr->info->user,
+		    notip ? "*" : userptr->info->domain,
+		    notip ? userptr->info->domain : "*", numfound);
+	    prnt(socket,outmsg);
+          }
+        }
+      userptr = userptr->collision;
+      }
+    }
+  if (!foundany)    
+    prnt(socket,"No multiple logins found.\n");
+}
+/*
+list_nicks()
+
+inputs		- socket to reply on, nicks to search for
+output		- NONE
+side effects	-
+*/
+
+void list_nicks(socket,nick)
+int socket;
+char *nick;
+{
+  HASHREC *userptr;
+  int i;
+  int numfound=0;
+  char outmsg[MAX_BUFF];
+  char fulluh[MAX_HOST+MAX_DOMAIN];
+
+  for (i=0;i<HASHTABLESIZE;++i)
+    {
+      userptr = domaintable[i];
+      while (userptr)
+	{
+	  if (!wldcmp(nick,userptr->info->nick))
+	    {
+	      if(!numfound++)
+		{
+		  (void)sprintf(outmsg,
+				"The following clients match %.150s:\n",nick);
+		  prnt(socket,outmsg);
+		}
+	      (void)sprintf(fulluh,
+			    "%s@@%s",userptr->info->user,userptr->info->host);
+	      (void)sprintf(outmsg,
+			    "  %s (%s)\n",userptr->info->nick,fulluh);
+	      prnt(socket,outmsg);
+	    }
+	  userptr = userptr->collision;
+        }
+    }
+
+  if (numfound > 0)
+    (void)sprintf(outmsg,
+		  "%d matches for %s found\n",numfound,nick);
+  else
+    (void)sprintf(outmsg,
+		  "No matches for %s found\n",nick);
+  prnt(socket,outmsg);
+}
+
+/*
+list_users()
+
+inputs		- socket to reply on
+output		- NONE
+side effects	-
+*/
+
+void list_users(socket,userhost)
+int socket;
+char *userhost;
+{
+  HASHREC *userptr;
+  char fulluh[MAX_HOST+MAX_DOMAIN];
+  int i,numfound = 0;
+  char outmsg[MAX_BUFF];
+
+  if (!strcmp(userhost,"*") || !strcmp(userhost,"*@@*"))
+    prnt(socket,"Listing all users is not recommended.  To do it anyway, use 'list ?*@@*'.\n");
+  else {
+    for (i=0;i<HASHTABLESIZE;++i) {
+      userptr = domaintable[i];
+      while (userptr)
+	{
+        (void)sprintf(fulluh,
+		      "%s@@%s",userptr->info->user,userptr->info->host);
+        if (!wldcmp(userhost,fulluh))
+	  {
+	    if (!numfound++)
+	      {
+		(void)sprintf(outmsg,
+			     "The following clients match %.150s:\n",userhost);
+		prnt(socket,outmsg);
+	      }
+	    (void)sprintf(outmsg,
+			  "  %s (%s)\n",userptr->info->nick,fulluh);
+	    prnt(socket,outmsg);
+          }
+        userptr = userptr->collision;
+        }
+      }
+    if (numfound > 0)
+      (void)sprintf(outmsg,
+	      "%d matches for %s found\n",numfound,userhost);
+    else
+      (void)sprintf(outmsg,
+		    "No matches for %s found\n",userhost);
+    prnt(socket,outmsg);
+  }
+}
+
+/*  This code from Phisher, Phisher comments ... ( - Dianora )
+
+
+   added listkill command, instead of reporting the nick@@uh from a list command
+   the bot just kills em. POWER!!!  Phisher dkemp@@frontiernet.net note:
+   obviously most of this code is just hendrixes routine, why re-write the 
+   bible, its the idea that counts :)
+
+
+*/
+
+void kill_list_users(socket,userhost)
+int socket;
+char *userhost;
+{
+  struct hashrec *userptr;
+  char fulluh[100];
+  int i,numfound = 0;
+  char outmsg[MAX_BUFF];
+
+  if (!strcmp(userhost,"*") || !strcmp(userhost,"*@@*"))
+    prnt(socket,"Killing all users is not recommended.  To do it anyway, use 'list ?*@@*'.\n");
+  else {
+    for (i=0;i<HASHTABLESIZE;++i) {
+      userptr = domaintable[i];
+      while (userptr) {
+        sprintf(fulluh,"%s@@%s",userptr->info->user,userptr->info->host);
+        if (!wldcmp(userhost,fulluh)) {
+          if (!numfound++) {
+            /* sprintf(outmsg,"The following clients match %.150s:\n",userhost);
+            prnt(socket,outmsg); */
+     }
+          sprintf(outmsg,"KILL %s :Too many connections, read MOTD\n",userptr->info->nick);
+          toserv(outmsg);
+          if(logging_fp)
+	    fprintf(logging_fp,"%s listkilled %s\n",
+               socket,fulluh);
+          }
+        userptr = userptr->collision;
+        }
+      }
+    if (numfound > 0)
+      sprintf(outmsg,"%d matches for %s found\n",numfound,userhost);
+    else
+      sprintf(outmsg,"No matches for %s found\n",userhost);
+    prnt(socket,outmsg);
+    }
+}
+
+/*
+print_help()
+
+inputs		- socket, help_text to use
+output		- none
+side effects	- prints help file to user
+*/
+
+void print_help(socket,text)
+int socket;
+char *text;
+{
+  FILE *userfile;
+  char line[MAX_BUFF];
+  char help_file[MAX_BUFF];
+  int cnt = 0;
+
+  if(text == (char *)NULL)
+    {
+      if( (userfile = fopen(HELP_FILE,"r")) == (FILE *)NULL)
+	{
+	  prnt(socket,"Help is not currently available\n");
+	  return;
+	}
+    }
+  else
+    {
+      while(*text == ' ')
+	text++;
+
+      (void)sprintf(help_file,"%s.%s",HELP_FILE,text);
+      if( (userfile = fopen(help_file,"r")) == (FILE *)NULL)
+	{
+	  (void)sprintf(line,"Help for %s is not currently available\n",text);
+	  prnt(socket,line);
+	  return;
+	}
+    }
+
+  while (fgets(line, MAX_BUFF-1, userfile) != NULL)
+    {
+      prnt(socket,line);
+    }
+  fclose(userfile);
+}
+
+/*
+print_motd()
+
+inputs		- socket
+output		- none
+side effects	- prints a message of the day to the connecting client
+
+Larz asked for this one. a message of the day on connect
+I just stole the code from print_help
+- Dianora
+*/
+
+void print_motd(socket)
+int socket;
+{
+  FILE *userfile;
+  char line[MAX_BUFF];
+  int cnt = 0;
+
+  if( (userfile = fopen(MOTD_FILE,"r")) == (FILE *)NULL)
+    {
+      prnt(socket,"No MOTD\n");
+      return;
+    }
+
+  while (fgets(line, MAX_BUFF-1, userfile) != NULL)
+    {
+      prnt(socket,line);
+    }
+  fclose(userfile);
+}
+
+void report_failures(socket,num)
+int socket,num;
+{
+  int i,j,maxx,foundany = 0;
+  char outmsg[MAX_BUFF];
+  struct failrec *tmp,*found;
+
+  /* Print 'em out from highest to lowest */
+  for (;;) {
+    maxx = num-1;
+    found = NULL;
+    tmp = failures;
+    while (tmp) {
+      if (tmp->failcount > maxx) {
+        found = tmp;
+        maxx = tmp->failcount;
+        }
+      tmp = tmp->next;
+      }
+    if (!found)
+      break;
+    if (!foundany++)
+      prnt(socket,"Userhosts with most connect rejections:\n");
+    sprintf(outmsg," %5d rejections: %s@@%s%s\n", found->failcount,
+            (*found->user ? found->user : "<UNKNOWN>"), found->host,
+            (found->botcount ? " <BOT>" : ""));
+    prnt(socket,outmsg);
+    found->failcount = -found->failcount;   /* Yes, this is horrible */
+    }
+  if (!foundany) {
+    sprintf(outmsg,"No userhosts have %d or more rejections.\n",num);
+    prnt(socket,outmsg);
+    }
+  tmp = failures;
+  while (tmp) {
+    if (tmp->failcount < 0)
+      tmp->failcount = -tmp->failcount;   /* Ugly, but it works. */
+    tmp = tmp->next;
+    }
+}
+
+void report_clones(socket)
+int socket;
+{
+  struct hashrec *userptr,*top,*temp;
+  int numfound,i,j,k;
+  char notip, foundany = 0;
+  char outmsg[MAX_BUFF];
+  time_t connfromhost[MAXFROMHOST];
+
+  for (i=0;i<HASHTABLESIZE;++i) {
+    top = userptr = hosttable[i];
+    while (userptr) {
+      numfound = 0;
+      /* Ensure we haven't already checked this host */
+      temp = top;
+      while (temp != userptr)
+        if (!strcmp(temp->info->host,userptr->info->host))
+          break;
+        else
+          temp = temp->collision;
+      if (temp == userptr) {
+        connfromhost[numfound++] = temp->info->connecttime;
+        temp = temp->collision;
+        while (temp) {
+          if (!strcmp(temp->info->host,userptr->info->host) &&
+              numfound < MAXFROMHOST)
+            connfromhost[numfound++] = temp->info->connecttime;
+          temp = temp->collision;
+          }
+        if (numfound > 2) {
+          for (k=numfound-1;k>1;--k)
+            for (j=0;j<numfound-k;++j) {
+              if (connfromhost[j] &&
+                  connfromhost[j] - connfromhost[j+k] <= (k+1) * CLONEDETECTINC)
+                goto getout;  /* goto rules! */
+              }
+          getout:
+          if (k > 1) {
+            if (!foundany++)
+              if (socket)
+                prnt(socket,"Possible clonebots from the following hosts:\n");
+              else
+                msg(mychannel,"Possible clonebots from the following hosts:");
+            sprintf(outmsg,
+                    "  %2d connections in %3d seconds (%2d total) from %s\n",
+                    k+1, connfromhost[j] - connfromhost[j+k], numfound+1,
+                    userptr->info->host);
+            if (socket)
+              prnt(socket,outmsg);
+            else if (foundany == 5)
+              msg(mychannel,"  [rest deleted... use DCC CHAT for full list]");
+            else if (foundany < 5) {
+              outmsg[strlen(outmsg)-1] = 0;
+              msg(mychannel,outmsg);
+              }
+            }
+          }
+        }
+      userptr = userptr->collision;
+      }
+    }
+  if (!foundany)
+    if (socket)
+      prnt(socket,"No potential clonebots found.\n");
+    else
+      msg(mychannel,"No potential clonebots found.");
+}
+
+void logfailure(nickuh,botreject)
+char *nickuh, botreject;
+{
+  char *uh, *host;
+  struct failrec *tmp, *hold = NULL;
+
+  uh = chopuh(nickuh);
+  host = strchr(uh,'@@');
+  if (!host)
+    return;
+  *(host++) = 0;
+  tmp = failures;
+  while (tmp) {
+    if (!strcasecmp(tmp->user,uh) && !strcasecmp(tmp->host,host)) {
+      /* For performance, move the most recent to the head of the queue */
+      if (hold) {
+        hold->next = tmp->next;
+        tmp->next = failures;
+        failures = tmp;
+        }
+      break;
+      }
+    hold = tmp;
+    tmp = tmp->next;
+    }
+
+  if (!tmp)
+    {
+    tmp = (struct failrec *)malloc(sizeof(struct failrec));
+    if(tmp == (struct failrec *)NULL)
+       {
+         prnt(connections[0].socket,"Ran out of memory in logfailure\n");
+	 sendtoalldcc("Ran out of memory in logfailure",SEND_ALL_USERS);
+	 gracefuldie();
+       }
+
+    strncpy(tmp->user,uh,11);
+    tmp->user[10] = 0;
+    strncpy(tmp->host,host,MAX_HOST);
+    tmp->host[79] = 0;
+    tmp->failcount = tmp->botcount = 0;
+    tmp->next = failures;
+    failures = tmp;
+    }
+  if (botreject)
+    ++tmp->botcount;
+  ++tmp->failcount;
+}
+
+/*
+link_look_notice
+
+inputs	- rest of notice from server
+output	- NONE
+side effects
+
+  What happens here: There is a fixed sized table of MAX_LINK_LOOKS
+each with a LINK_LOOK_ENTRY struct. Both the expiry of old old link
+entries is made, plus the search for an empty slot to stick a possible
+new entry into. If the user@@host entry is NOT found in the table
+then an entry is made for this user@@host, and is time stamped.
+
+	- Dianora
+
+ARGGHHHHH
+
+  +th ircd has "LINKS '...' requested by "
+  where ... is usualy blank or a server name etc.
+  LT and CS do not. sorry guys for missing that. :-(
+  Jan 1 1997  - Dianora
+*/
+void link_look_notice(server_notice)
+char *server_notice;
+{
+  char *nick_reported;
+  char *user_host;
+  char *user;
+  char *host;
+  char *p;
+  char notice[MAX_BUFF];
+  char hold[MAX_BUFF];
+  char copy_of_server_notice[MAX_BUFF];
+  time_t current_time;
+  int first_empty_entry = -1;
+  int found_entry = NO;
+  int i;
+
+  current_time = time((time_t *)NULL);
+
+  p = server_notice;
+
+  (void)printf("DEBUG: link_look server_notice = [%s]\n", server_notice );
+
+  if(*p == '\'')		/* Is this a +th server ?*/
+    {
+      /* This is a +th server, skip the '...' part */
+      p++;
+      p = strchr(p,'\'');
+      if(p == (char*)NULL)return; 	/* just ignore it *sigh* */
+      p++;
+      strncpy(copy_of_server_notice,p,MAX_BUFF);
+    }
+  else
+    strncpy(copy_of_server_notice,p,MAX_BUFF);
+
+  p = strtok(copy_of_server_notice," ");
+  if(p == (char *)NULL) return;	/* just ignore it *sigh* */
+  (void)printf("DEBUG: link_look p = [%s]\n", p);
+
+  if(strcasecmp(p,"requested") != 0)return;	/* just ignore it *sigh* */
+
+  p = strtok((char *)NULL," ");
+  if(p == (char *)NULL) return;		/* just ignore it *sigh* */
+  if(strcasecmp(p,"by") != 0)return;	/* just ignore it *sigh* */
+
+  nick_reported = strtok((char *)NULL," ");
+  if(nick_reported == (char *)NULL)return;
+
+  user_host = strtok((char *)NULL," ");
+  if(user_host == (char *)NULL)return;
+
+  (void)printf("DEBUG: link_look user_host now = [%s]\n", user_host );
+
+/*
+  Lets try and get it right folks... [user@@host] or (user@@host)
+*/
+
+  if(*user_host == '[')
+    {
+      user_host++;
+      p = strrchr(user_host,']');
+      if(p)
+	*p = '\0';
+    }
+  else if(*user_host == '(')
+    {
+      user_host++;
+      p = strrchr(user_host,')');
+      if(p)
+	*p = '\0';
+    }
+
+  (void)printf("DEBUG: link_look user_host now = [%s]\n", user_host );
+
+  /* Don't even complain about opers */
+
+  if ( isoper(user_host) )  
+    {
+      (void)printf("DEBUG: is oper\n");
+      return;
+    }
+
+  (void)sprintf(notice,"[LINKS %s]", server_notice); /* - zaph */
+  sendtoalldcc(notice,SEND_ALL_USERS);
+
+  for(i = 0; i < MAX_LINK_LOOKS; i++ )
+    {
+      if(link_look[i].user_host)
+	{
+	  if(strcasecmp(link_look[i].user_host,user_host) == 0)
+	    {
+	      char *user;
+	      char *host;
+
+	      found_entry = YES;
+	      (void)printf("DEBUG: found_entry = YES [%s]\n", user_host );
+	  
+	      /* if its an old old entry, let it drop to 0, then start counting
+		 (this should be very unlikely case)
+		 */
+	      if((link_look[i].last_link_look + MAX_LINK_TIME) < current_time)
+		{
+		  link_look[i].link_look_count = 0;
+		}
+
+	      link_look[i].link_look_count++;
+	      (void)printf("DEBUG: link_look[%d].link_look_count =  [%d]\n",
+			   i,link_look[i].link_look_count );
+	      
+	      if(link_look[i].link_look_count >= MAX_LINK_LOOKS)
+		{
+		  (void)sprintf(notice,"possible LINK LOOKER nick [%s]", 
+				nick_reported,user_host);
+		  sendtoalldcc(notice,SEND_ALL_USERS);
+
+		  initlog();
+		  if(logging_fp)
+		    fprintf(logging_fp,
+			    "possible LINK LOOKER  = %s [%s]\n",
+			    nick_reported,user_host);
+
+/*
+   The code as it is, doesn't AUTO_KLINE link lookers ever, but will
+   AUTO_KILL link lookers IFF autopilot is on. HOWEVER,
+   Shadowfax still wants to see a suggested kline to use.
+
+   - Dianora
+*/
+		  if ( !okhost(user_host) )
+		    {
+#ifdef AUTO_KILL_LINK_LOOKERS
+		      if(autopilot)
+			{
+			  (void)sprintf(hold,"KILL %s :link looker\n",
+					nick_reported );
+			  toserv(hold);
+			  (void)free(link_look[i].user_host);
+			  link_look[i].user_host = (char *)NULL;
+			}
+#endif
+		      user = strtok(user_host,"@@");
+		      if(user == (char *)NULL)return; /* OOOPSIES! */
+		      host = strtok((char *)NULL,"");
+		      if(host == (char *)NULL)return; /* OOPSIES! */
+		      
+		      if(*user_host == '~')
+			suggest_kline(NO,user,host,NO,NO,"link looker");
+		      else
+			suggest_kline(NO,user,host,NO,YES,"link_looker");
+		    }
+
+#ifndef AUTO_KILL_LINK_LOOKERS
+		  link_look[i].last_link_look = current_time;
+#endif
+		  if(logging_fp)
+		    {
+		      (void)fclose(logging_fp);
+		      logging_fp = (FILE *)NULL;
+		    }
+		}
+	      else
+		{
+		  link_look[i].last_link_look = current_time;
+		}
+	    }
+	  else
+	    {
+	      if((link_look[i].last_link_look + MAX_LINK_TIME) < current_time)
+		{
+		  (void)free(link_look[i].user_host);
+		  link_look[i].user_host = (char *)NULL;
+		}
+	    }
+	}
+      else
+	{
+	  if(first_empty_entry < 0)
+	    first_empty_entry = i;
+	}
+    }
+
+/*
+   If this is a new entry, then found_entry will still be NO
+*/
+
+  if(!found_entry)
+    {
+      if(first_empty_entry >= 0)
+	{
+	  (void)printf("DEBUG: new entry user_host [%s]\n", user_host );
+	  link_look[first_empty_entry].user_host = strdup(user_host);
+	  link_look[first_empty_entry].last_link_look = current_time;
+	  link_look[first_empty_entry].link_look_count = 0;
+	}
+    }
+}
+
+/*
+cs_nick_flood
+
+inputs	- rest of notice from server
+output	- NONE
+side effects
+
+	For clones CS uses [user@@host] for nick flooding CS uses (user@@host)
+	go figure.
+
+	- Dianora
+*/
+void cs_nick_flood(server_notice)
+char *server_notice;
+{
+  char *nick_reported;
+  char *user_host;
+  char *user;
+  char *host;
+  char *p;
+  char notice[MAX_BUFF];
+
+  nick_reported = strtok(server_notice," ");
+  if(nick_reported == (char *)NULL)return;
+
+  user_host = strtok((char *)NULL," ");
+  if(user_host == (char *)NULL)return;
+
+/*
+  Lets try and get it right folks... [user@@host] or (user@@host)
+*/
+
+  if(*user_host == '[')
+    {
+      user_host++;
+      p = strrchr(user_host,']');
+      if(p)
+	*p = '\0';
+    }
+  else if(*user_host == '(')
+    {
+      user_host++;
+      p = strrchr(user_host,')');
+      if(p)
+	*p = '\0';
+    }
+
+    (void)sprintf(notice,"CS nick flood user_host = [%s]", user_host);
+    sendtoalldcc(notice,SEND_ALL_USERS);
+
+  initlog();
+  if(logging_fp)
+    fprintf(logging_fp,"CS nick flood user_host = [%s]\n", user_host);
+
+  if ( (!okhost(user_host)) && (!isoper(user_host)) )  
+    {
+#ifdef AUTO_KILL_NICK_FLOODING
+      if(autopilot)
+	{
+	  (void)sprintf(notice,"KILL %s :flooding\n", nick_reported );
+	  toserv(notice);
+	}
+#endif
+      user = strtok(user_host,"@@");
+      if(user == (char *)NULL)return; /* OOOPSIES! */
+      host = strtok((char *)NULL,"");
+      if(host == (char *)NULL)return; /* OOPSIES! */
+      
+#ifdef AUTO_KILL_NICK_FLOODING
+/*
+   IF AUTO killing nick flooders, I will not be k-lining
+   nick flooders
+*/
+      if(*user_host == '~')
+	suggest_kline(NO,user,host,NO,NO,"flooding");
+      else
+	suggest_kline(NO,user,host,NO,YES,"flooding");
+#else
+/*
+   IF not AUTO killing nick flooders, might still be AUTO k-lining
+   nick flooders
+*/
+      if(*user_host == '~')
+	suggest_kline(YES,user,host,NO,NO,"flooding");
+      else
+	suggest_kline(YES,user,host,NO,YES,"flooding");
+#endif
+    }
+
+  if(logging_fp)
+    {
+      (void)fclose(logging_fp);
+      logging_fp = (FILE *)NULL;
+    }
+}
+
+/*
+cs_clones
+
+inputs	- notice
+output	- none
+side effects
+	connected opers are dcc'ed a suggested kline
+
+	- Dianora 
+*/
+void cs_clones(server_notice)
+char *server_notice;
+{
+  int identd = YES;
+  char *user;
+  char *host;
+  char *p;
+  char *nick_reported;
+  char *user_host;
+  char notice[MAX_BUFF];
+
+  nick_reported = strtok(server_notice," ");
+  if(nick_reported == (char *)NULL)return;
+
+  user_host = strtok((char *)NULL," ");
+  if(user_host == (char *)NULL)return;
+
+/*
+  Lets try and get it right folks... [user@@host] or (user@@host)
+*/
+
+  if(*user_host == '[')
+    {
+      user_host++;
+      p = strrchr(user_host,']');
+      if(p)
+	*p = '\0';
+    }
+  else if(*user_host == '(')
+    {
+      user_host++;
+      p = strrchr(user_host,')');
+      if(p)
+	*p = '\0';
+    }
+
+  (void)sprintf(notice,"CS clones user_host = [%s]\n", user_host);
+  sendtoalldcc(notice,SEND_ALL_USERS);
+
+  p = strdup(user_host);
+  user = strtok(user_host,"@@");
+  if(*user == '~')
+    {
+      user++;
+      identd = NO;
+    }
+
+  host = strtok((char*)NULL,"");
+
+  initlog();
+
+  if(logging_fp)
+    fprintf(logging_fp,"CS clones = [%s]\n", user_host);
+  suggest_kline(NO,user,host,NO,identd,"clones");
+
+  if(logging_fp)
+    {
+      (void)fclose(logging_fp);
+      logging_fp = (FILE *)NULL;
+    }
+  (void)free(p);
+}
+
+/*
+check_nick_flood()
+
+inputs	- rest of notice from server
+output	- NONE
+side effects
+
+	- Dianora
+*/
+
+void check_nick_flood(server_notice)
+char *server_notice;
+{
+  char *p;
+  char *nick1;
+  char *nick2;
+  char *user_host;
+
+#ifdef TELETYPE_NIH
+  nick1 = strtok(server_notice," ");	/* This _should_ be nick1 */
+  if(nick1 == (char *)NULL)return;
+#else
+  p = strtok(server_notice," ");	/* Throw away the "From" */
+  if(p == (char *)NULL) return;
+
+  if(strcasecmp(p,"From") != 0)	/* This isn't an LT notice */
+    {
+      nick1 = p;	/* This _should_ be nick1 */
+
+      user_host = strtok((char *)NULL," ");	/* (user@@host) */
+      if(user_host == (char *)NULL)return;
+      if(*user_host == '(')
+	user_host++;
+
+      p = strrchr(user_host,')');
+      if(p)
+	*p = '\0';
+
+      p = strtok((char *)NULL," ");
+      if(p == (char *)NULL)
+	return;
+
+      if(strcmp(p,"now") != 0 )
+	return;
+
+      p = strtok((char *)NULL," ");
+      if(p == (char *)NULL)
+	return;
+
+      if(strcmp(p,"known") != 0 )
+	return;
+
+      p = strtok((char *)NULL," ");
+      if(p == (char *)NULL)
+	return;
+
+      if(strcmp(p,"as") != 0 )
+	return;
+
+      nick2 = strtok((char *)NULL," ");/* This _should_ be nick2 */
+      if(nick2 == (char *)NULL)return;
+
+      add_to_nick_change_table(user_host,nick2);
+      updateuserhost(nick1,nick2,user_host);
+
+      return;
+    }
+
+  nick1 = strtok((char *)NULL," ");	/* This _should_ be nick1 */
+  if(nick1 == (char *)NULL)return;
+#endif
+
+  p = strtok((char *)NULL," ");		/* Throw away the "to" */
+  if(p == (char *)NULL)return;
+
+  nick2 = strtok((char *)NULL," ");	/* This _should_ be nick2 */
+  if(nick2 == (char *)NULL)return;
+
+  user_host = strtok((char *)NULL," ");	/* and this _should_ be the u@@h part */
+  if(user_host == (char *)NULL)return;
+
+  if(*user_host == '[')
+    user_host++;
+
+  p = strrchr(user_host,']');
+  if(p)
+    *p = '\0';
+
+/* N.B.
+   hendrix's original code munges the user_host variable
+   so, add_to_nick_change must occur BEFORE
+   updateuserhost is called. grrrrrrrrrrrr
+   I hate order dependencies of calls.. but there you are.
+   This caused a bug in v0.1
+
+   -Dianora
+*/
+
+  add_to_nick_change_table(user_host,nick2);
+  updateuserhost(nick1,nick2,user_host);
+}
+
+/*
+init_nick_change_table()
+
+inputs - NONE
+output - NONE
+side effects -
+	clears out the nick change table
+
+	- Dianora
+*/
+
+void init_nick_change_table()
+{
+  int i;
+
+  for(i = 0; i < NICK_CHANGE_TABLE_SIZE; i++)
+    nick_changes[i] = (NICK_CHANGE_ENTRY *)NULL;
+}
+
+/*
+init_link_look_table()
+
+inputs - NONE
+output - NONE
+side effects -
+	clears out the link looker change table
+	This is very similar to the NICK_CHANGE code in many respects
+
+	- Dianora
+*/
+
+void init_link_look_table()
+{
+  int i;
+
+  for(i = 0; i < LINK_LOOK_TABLE_SIZE; i++)
+    link_look[i].user_host = (char *)NULL;
+}
+
+/*
+add_to_nick_change_table()
+
+inputs	- user_host i.e. user@@host
+	- last_nick last nick change
+output	- NONE
+side effects -
+	add to list of current nick changers
+
+  What happens here is that a new nick is introduced for
+an already existing user, or a possible nick flooder entry is made.
+When a new possible nick flooder entry is made, the entry
+is time stamped with its creation. Already present entries
+get updated with the current time "last_nick_change"
+
+  Expires of already existing nick entries was combined in this
+loop and in the loop in report_nick_flooders() (i.e. no more
+expire nick_table.. as in previous versions)
+at the suggestion of Shadowfax, (mpearce@@varner.com)
+
+  What happens is that add_to_nick_change_table() is called
+at the whim of nick change notices, i.e. not from a timer.
+(similar applies to report_nick_flooders(), when expires are done)
+
+  Every NICK_CHANGE_T1_TIME, (defaulted to 10 seconds in config.h)
+one nick change count is decremented from the nick change count
+for each user in list. Since this function is called asynchronously,
+I have to calculate how many "time_ticks" i.e. how many 10
+second intervals have passed by since the entry was last examined.
+
+  If an entry is really stale, i.e. nothing has changed in it in
+NICK_CHANGE_T2_TIME it is just completely thrown out.
+This code is possibly, uneeded. I am paranoid. The idea here
+is that if someone racks up a lot of nick changes in a brief
+amount of time, but stop (i.e. get killed, flooded off, klined :-) )
+Their entry doesn't persist longer than five minutes.
+
+	- Dianora
+*/
+
+void add_to_nick_change_table(user_host,last_nick)
+char *user_host;
+char *last_nick;
+{
+  char *user;
+  char *host;
+  char notice[MAX_BUFF];
+#ifdef AUTO_KILL_NICK_FLOODING
+  char hold[MAX_BUFF];
+#endif
+  int i;
+  int found_entry=NO;
+  int found_empty_entry=INVALID;
+  NICK_CHANGE_ENTRY *ncp;
+  time_t current_time;
+  struct tm *tmrec;
+
+  current_time = time((time_t *)NULL);
+
+  for(i = 0; i < NICK_CHANGE_TABLE_SIZE; i++)
+    {
+      if(ncp = nick_changes[i])
+	{
+	  time_t time_difference;
+	  int time_ticks;
+
+	  time_difference = current_time - ncp->last_nick_change;
+
+	  /* is it stale ? */
+	  if( time_difference >= NICK_CHANGE_T2_TIME )
+	    {
+	      (void)free(ncp->user_host);
+	      (void)free(nick_changes[i]);
+	      nick_changes[i] = (NICK_CHANGE_ENTRY *)NULL;
+	    }
+	  else
+	    {
+	      /* how many 10 second intervals do we have? */
+	      time_ticks = time_difference / NICK_CHANGE_T1_TIME;
+
+	      /* is it stale? */
+	      if(time_ticks >= ncp->nick_change_count)
+		{
+		  (void)free(ncp->user_host);
+		  (void)free(nick_changes[i]);
+		  nick_changes[i] = (NICK_CHANGE_ENTRY *)NULL;
+		}
+	      else
+		{
+		  /* just decrement 10 second units of nick changes */
+		  ncp->nick_change_count -= time_ticks;
+		  if(strcasecmp(ncp->user_host,user_host) == 0)
+		    {
+		      ncp->last_nick_change = current_time;
+		      (void)strncpy(ncp->last_nick,last_nick,MAX_NICK);
+		      ncp->nick_change_count++;
+		      found_entry = YES;
+		    }
+
+		  /* now, check for a nick flooder */
+	  
+		  if((ncp->nick_change_count >= NICK_CHANGE_MAX_COUNT)
+		     && !ncp->noticed)
+		    {
+		      tmrec = localtime(&ncp->last_nick_change);
+		      initlog();
+
+		      (void)sprintf(notice,
+	    "nick flood %s (%s) %d in %d seconds (%2.2d:%2.2d:%2.2d)",
+				    ncp->user_host,
+				    ncp->last_nick,
+				    ncp->nick_change_count,
+				    ncp->last_nick_change-
+				      ncp->first_nick_change,
+				    tmrec->tm_hour,
+				    tmrec->tm_min,
+				    tmrec->tm_sec);
+
+/*
+   A little convoluted here *sigh*
+   but if I want to auto kill nick flooders, I compile
+   in a KILL message here, then I still want to suggest a kline to use
+
+  I trust opers will not be nick flooding, but just in case
+  I won't AUTO kill an oper..
+
+  - Dianora
+*/
+
+#ifdef AUTO_KILL_NICK_FLOODING
+		      if(autopilot)
+			{
+			  if ( (!okhost(user_host)) && (!isoper(user_host)))  
+			    {
+			      (void)sprintf(hold,
+				      "KILL %s :nick flooding\n", last_nick );
+			      toserv(hold);
+			    }
+			}
+#endif
+/*
+   get ready to suggest a kline
+*/
+		      user = strtok(user_host,"@@");
+		      if(user == (char *)NULL)return; /* OOOPSIES! */
+		      host = strtok((char *)NULL,"");
+		      if(host == (char *)NULL)return; /* OOPSIES! */
+		      
+/*
+   If auto killing nick flooders, suggest the kline but
+   tell "suggest_kline()" NOT to kline the nick
+*/
+
+#ifdef AUTO_KILL_NICK_FLOODING
+		      if(*user_host == '~')
+			suggest_kline(NO,user,host,NO,NO,"flooding");
+		      else
+			suggest_kline(NO,user,host,NO,YES,"flooding");
+#else
+/*
+   If NOT auto killing nick flooders, suggest the kline but
+   tell "suggest_kline()" TO kline the nick IFF autopilot is ON
+   AND AUTO_KLINE is on
+*/
+		      if(*user_host == '~')
+			suggest_kline(YES,user,host,NO,NO,"flooding");
+		      else
+			suggest_kline(YES,user,host,NO,YES,"flooding");
+
+#endif
+		      if(logging_fp)
+			(void)fprintf(logging_fp,
+ "nick flood %s (%s) %d in %d seconds (%02d/%02d/%02d %2.2d:%2.2d:%2.2d)\n",
+				    ncp->user_host,
+				    ncp->last_nick,
+				    ncp->nick_change_count,
+				    ncp->last_nick_change-
+				      ncp->first_nick_change,
+				    tmrec->tm_mon+1,
+				    tmrec->tm_mday,
+				    tmrec->tm_year,
+				    tmrec->tm_hour,
+				    tmrec->tm_min,
+				    tmrec->tm_sec);
+
+
+		      ncp->noticed = YES;
+		      sendtoalldcc(notice,SEND_ALL_USERS);
+
+		      if(logging_fp)
+			{
+			  (void)fclose(logging_fp);
+			  logging_fp = (FILE *)NULL;
+			}
+		    }
+		}
+	    }
+	}
+      else
+	{
+	  if( found_empty_entry == INVALID )
+	    found_empty_entry = i;
+	}
+    }
+
+  if(found_entry)
+    return;
+
+  ncp = (NICK_CHANGE_ENTRY *)malloc(sizeof(NICK_CHANGE_ENTRY));
+
+  if( ncp == (NICK_CHANGE_ENTRY *)NULL)
+    {
+      prnt(connections[0].socket,"Ran out of memory in add_to_nick_change_table\n");
+      sendtoalldcc("Ran out of memory in add_to_nick_change_table",SEND_ALL_USERS);
+      gracefuldie();
+    }
+
+  if( (ncp->user_host = strdup(user_host)) == (char *)NULL)
+    {
+      (void)sprintf(notice,"Ran out of memory in add_to_nick_change_table");
+      sendtoalldcc(notice,SEND_ALL_USERS);
+      gracefuldie();
+    }
+
+/* If the table is full, don't worry about this nick change for now
+   if this nick change is part of a flood, it will show up
+   soon enough anyway... -db
+*/
+
+  if(found_empty_entry != INVALID)
+    {
+      ncp->first_nick_change = current_time;
+      ncp->last_nick_change = current_time;
+      ncp->nick_change_count = 1;
+      ncp->noticed = NO;
+      nick_changes[found_empty_entry] = ncp;
+    }
+}
+
+
+void bot_reject(text)
+char *text;
+{
+  char generic = 0;
+
+  if (text) {
+    if (!strncmp("bot:",text,4))
+      ++generic;
+    text = strchr(text,' ');
+    if (!text)
+      return;
+    if (!generic) {
+      text = strchr(text+1,' ');
+      if (!text)
+        return;
+      }
+    logfailure(text+1,1);
+    }
+}
+
+
+/*
+freehash()
+
+inputs	- NONE
+output	- NONE
+side effects -
+	clear all allocated memory hash tables
+
+	- rewritten by Dianora
+	memory leak found...
+*/
+
+void freehash()
+{
+  int i;
+  HASHREC *hp;
+  HASHREC *next_hp;
+  HASHREC *dp;
+  HASHREC *next_dp;
+
+  for (i=0;i<HASHTABLESIZE;++i)
+    {
+      hp = hosttable[i];
+      while(hp)
+	{
+	  next_hp = hp->collision;
+	  printf("hp->info->link_count = %d\n", hp->info->link_count);
+
+	  if(hp->info->link_count > 0)
+	    hp->info->link_count--;
+
+	  if(hp->info->link_count == 0)
+	    {
+	      printf("free(hp->info);\n");
+	      (void)free(hp->info); 
+	    }
+
+	  (void)free(hp);
+	  hp = next_hp;
+	}
+      hosttable[i] = (HASHREC *)NULL;
+
+      dp = domaintable[i];
+      while(dp)
+	{
+	  next_dp = dp->collision;
+	  printf("dp->info->link_count = %d\n", dp->info->link_count);
+
+	  if(dp->info->link_count > 0)
+	    dp->info->link_count--;
+
+	  if(dp->info->link_count == 0)
+	    {
+	      printf("free(dp->info);\n");
+	      (void)free(dp->info);
+	    }
+
+	  (void)free(dp);
+	  dp = next_dp;
+	}
+      domaintable[i] = (HASHREC *)NULL;
+    }
+}
+
+/*
+kline_add_report
+
+inputs	- rest of notice from server
+output	- NONE
+side effects
+
+     Reports klines when added.
+
+>irc2.blackened.com NOTICE ToastMON :*** Notice -- ToastMON added K-Line for
+[fake@@another.test.kline]: remove me too by Toast 02/21/97
+
+- Toast
+
+*/
+
+void kline_add_report(char *server_notice)
+{
+  FILE *fp_log;
+  time_t current_time;
+  struct tm *broken_up_time;
+  char notice[MAX_BUFF];
+
+  current_time = time((time_t *)NULL);
+  broken_up_time = localtime(&current_time);
+  
+  (void)sprintf(notice,"*** %s", server_notice);
+  sendtoalldcc(notice,SEND_ALL_USERS);
+
+/* Probably don't need to log klines. --- Toast */
+/* I think we need to log everything JIC - Dianora */
+
+  if((fp_log = fopen(KILL_KLINE_LOG,"a")) != (FILE *)NULL)
+    {
+      fprintf(fp_log,"%02d/%02d/%d %02d:%02d %s\n",
+	      (broken_up_time->tm_mon)+1,
+	      broken_up_time->tm_mday,
+	      broken_up_time->tm_year,
+	      broken_up_time->tm_hour,
+	      broken_up_time->tm_min,
+	      server_notice);
+
+      (void)fclose(fp_log);
+    }
+}
+
+/*
+kill_add_report
+
+input		- server notice
+output		- none
+side effects	- local kills are logged (hopefully)
+
+  Log only local kills though....
+
+*** Notice -- Received KILL message for Newbie2. From Dianora_ Path:
+  ts1-4.ottawa.net!Dianora_ (clone)
+Thanks Thembones for bug fix (Brian Kraemer kraemer@@u.washington.edu)
+*/
+
+void kill_add_report(char *server_notice)
+{
+char *path;
+char *p, *from;
+int number_of_bangs = 0;
+
+  from = strstr(server_notice,"From ");		/* We do it like this */
+  if(path == (char *)NULL)			/* because the nick killed */
+    return;					/* Could match *From* */
+
+  /* Now check the killer's name for a . */
+  for (p = (from += 7); ((*p) && (*p != ' ')); p++)
+    if (*p == '.')			/* Ignore Server kills */
+      return;
+
+  path = strstr(server_notice,"Path:");
+  if (path == (char *)NULL)
+    return;
+
+  p = path;
+  while(*p)
+    {
+      if(*p == '!')
+        {
+          number_of_bangs++;
+          if( number_of_bangs > 1)return;
+        }
+      p++;
+    }
+
+  kline_add_report(server_notice);
+}
+
+#ifndef OTHERNET
+/*
+stats_notice
+
+intputs		- notice
+output		- none
+side effects 	-
+*/
+
+void stats_notice(server_notice)
+char *server_notice;
+{
+char *requested;
+char *by;
+char *nick;
+
+  printf("stats_notice server_notice = [%s]\n",server_notice);
+  if((*server_notice == 'g') || (*server_notice == 'G'))
+    {
+      server_notice += 2;
+      requested = strtok(server_notice," ");
+      if(requested == (char *)NULL)
+	return;
+
+      if(strcasecmp(requested,"requested"))
+	return;
+      by = strtok((char *)NULL," ");
+      if(by == (char *)NULL)
+	return;
+      if(strcasecmp(by,"by"))
+	return;
+      nick = strtok((char *)NULL," ");
+      notice(nick,"There are no G Lines on Efnet");
+    }
+
+#ifdef NOT_TH
+  if((*server_notice == 'p') || (*server_notice == 'P'))
+    {
+      HASHREC *userptr;
+      int i;
+      char notice_buff[NOTICE_SIZE];
+      char fulluh[MAX_HOST+MAX_DOMAIN];
+
+      server_notice += 2;
+      requested = strtok(server_notice," ");
+      if(requested == (char *)NULL)
+	return;
+
+      if(strcasecmp(requested,"requested"))
+	return;
+      by = strtok((char *)NULL," ");
+      if(by == (char *)NULL)
+	return;
+      if(strcasecmp(by,"by"))
+	return;
+      nick = strtok((char *)NULL," ");
+
+      for( i=0; i < HASHTABLESIZE; ++i)
+	{
+	  userptr = domaintable[i];
+	  while(userptr)
+	    {
+	      (void)sprintf(notice_buff,"seen nick %s isoper %d",
+			    userptr->info->nick,userptr->info->isoper);
+	      if(userptr->info->isoper)
+		{
+		  (void)sprintf(fulluh,
+				"%s@@%s",
+				userptr->info->user,userptr->info->host);
+		  (void)sprintf(notice_buff,"Oper %s (%s)",
+				userptr->info->nick,fulluh);
+		  notice(nick,notice_buff);
+		}
+	      userptr = userptr->collision;
+	    }
+	}
+    }
+#endif
+
+#ifdef NOT_A_HUB
+  if((*server_notice == 'h') || (*server_notice == 'H'))
+    {
+      server_notice += 2;
+      requested = strtok(server_notice," ");
+      if(requested == (char *)NULL)
+	return;
+
+      if(strcasecmp(requested,"requested"))
+	return;
+      by = strtok((char *)NULL," ");
+      if(by == (char *)NULL)
+	return;
+      if(strcasecmp(by,"by"))
+	return;
+      nick = strtok((char *)NULL," ");
+      notice(nick,"No, we aren't a HUB, No we cannot link your server");
+    }
+#endif
+}
+#endif
+
+
+@
+
+
+1.28
+log
+@next support
+@
+text
+@d41 1
+a41 1
+static char *version="$Id: bothunt.c,v 1.27 1997/05/21 00:56:29 db Exp db $";
+d124 1
+a124 1
+void kill_add_report(char *);		/* - Dianora */
+d427 2
+a428 1
+Certainly, if you have REMOTE_KLINE etc. defined...
+d3195 1
+d3201 1
+a3201 1
+char *p;
+d3204 9
+d3214 1
+a3214 1
+  if(path == (char *)NULL)
+d3227 1
+@
+
+
+1.27
+log
+@checkpoint
+@
+text
+@d41 5
+a45 1
+static char *version="$Id: bothunt.c,v 1.26 1997/05/12 01:48:33 db Exp db $";
+d123 2
+a124 1
+void kline_add_report();	/* Toast */
+a633 1
+#ifdef REPORT_KLINES
+d637 3
+a639 1
+#endif
+d1041 26
+a1066 1
+	kill_spoof(nick);
+d1069 7
+a1075 2
+  p = strchr(user,'@@');
+  if(p)
+d1081 1
+a1081 2
+  p = strchr(user,'*');
+  if(p)
+d1157 1
+a1157 1
+  /*
+d1161 1
+a1161 1
+  */
+d1455 9
+d1569 5
+a1573 32
+#ifdef AUTO_KLINE
+	      if(autopilot && kline)
+		{
+#ifdef NO_STUPID_KLINE
+		  (void)sprintf(notice,
+			  "/quote kline *@@%s :%s %02d/%02d/%02d",
+			  host,reason,
+			  (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+			  broken_up_time->tm_year);
+#else
+		  (void)sprintf(notice,
+			  "Adding Auto Kline for *@@%s :%s %02d/%02d/%02d",
+			  host,reason,
+			  (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+			  broken_up_time->tm_year);
+
+		  (void)sprintf(hold,
+			  "KLINE *@@%s :Auto-kline, %s %02d/%02d/%02d\n",
+			  host,reason,
+			  (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+			  broken_up_time->tm_year);
+#endif  /* #ifdef NO_STUPID_KLINE */
+		}
+	      else
+#endif	/* #ifdef AUTO_KLINE */
+		{
+		  (void)sprintf(notice,
+			  "/quote kline *@@%s :%s %02d/%02d/%02d",
+			  host,reason,
+			  (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+			  broken_up_time->tm_year);
+		}
+d1650 5
+a1654 24
+#ifdef AUTO_KLINE
+	   if(autopilot && kline)
+	     {
+	       (void)sprintf(notice,
+		       "Adding Auto Kline for *%s@@%s :%s %02d/%02d/%02d",
+		       user,suggested_host,reason,
+		       (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+		       broken_up_time->tm_year);
+
+	       (void)sprintf(hold,
+		       "KLINE *%s@@%s :%s %02d/%02d/%02d\n",
+		       user,suggested_host,reason,
+		       (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+		       broken_up_time->tm_year);
+	     }
+	   else
+#endif
+	     {
+	       (void)sprintf(notice,
+		       "/quote kline *%s@@%s :%s %02d/%02d/%02d",
+		       user,suggested_host,reason,
+		       (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+		       broken_up_time->tm_year);
+	     }
+d2326 2
+d2337 2
+d2342 1
+d2356 2
+d2377 1
+d2382 4
+a2385 1
+    return;
+d2400 2
+d2411 2
+d2494 1
+d3150 1
+d3152 1
+d3155 3
+d3160 3
+d3166 12
+a3177 3
+#ifdef LOG_KLINES
+/* Probably don't need to log klines. --- Toast
+   Well, give them the option. - Dianora */
+d3179 29
+a3207 2
+  initlog();
+  if(logging_fp)
+d3209 6
+a3214 3
+      fprintf(logging_fp,"*** %s\n", server_notice);
+      (void)fclose(logging_fp);
+      logging_fp = (FILE *)NULL;
+d3216 1
+a3216 1
+#endif
+d3319 2
+@
+
+
+1.26
+log
+@added chris's ca services code, cleaned up moved bot code/etc.
+@
+text
+@d15 6
+d41 1
+a41 1
+static char *version="$Id: bothunt.c,v 1.25 1997/05/01 00:31:30 db Exp db $";
+d102 1
+d984 1
+d1005 1
+a1005 1
+  char *tmp, iphold[20];
+d1009 2
+d1012 2
+a1013 2
+  tmp = strchr(userhost,'@@');
+  if (!tmp)
+d1015 36
+a1050 1
+  *(tmp++) = 0;
+d1061 5
+a1065 5
+  newuser->nick[MAX_NICK-1] = 0;
+  strncpy(newuser->user,userhost,11);
+  newuser->user[MAX_NICK] = 0;
+  strncpy(newuser->host,tmp,MAX_HOST);
+  newuser->host[MAX_HOST-1] = 0;
+d1072 1
+a1072 1
+  domain = tmp + strlen(tmp) - 1;
+d1076 1
+a1076 1
+      domain = tmp;
+d1094 1
+a1094 1
+    while (--domain != tmp)
+d1101 1
+a1101 1
+  addtohash(hosttable, tmp, newuser);
+d1106 24
+a1129 1
+    checkhostclones(tmp);
+d1404 16
+a1514 2
+#ifdef AUTO_KLINE
+#ifndef NO_STUPID_KLINES
+d1525 1
+d1528 7
+d1546 1
+d1549 1
+a1550 2
+#endif
+		  /*for NO_STUPID_KLINES just warn about them, don't do them */
+a1555 1
+#ifndef NO_STUPID_KLINES
+a1559 3
+#endif
+#endif
+
+d1567 1
+d1569 1
+a1569 6
+
+#ifdef AUTO_KLINE
+#ifndef NO_STUPID_KLINES
+	    }
+#endif
+#endif
+a1578 1
+#ifdef AUTO_KLINE
+d1581 1
+d1597 1
+a1607 1
+#endif
+a1614 1
+#ifdef AUTO_KLINE
+d1616 3
+a1618 1
+#endif
+a1630 1
+#ifdef AUTO_KLINE
+d1633 1
+d1649 1
+a1659 1
+#endif
+a1666 1
+#ifdef AUTO_KLINE
+d1668 3
+a1670 1
+#endif
+@
+
+
+1.25
+log
+@texasnet fixes/ OPERS_ONLY screw up fixed
+@
+text
+@d35 1
+a35 1
+static char *version="$Id: bothunt.c,v 1.24 1997/04/30 17:50:10 db Exp db $";
+d65 1
+a65 1
+#define MAXDOMAINS     1000
+d294 1
+a294 1
+  char randnick[10];
+d1691 17
+d1713 1
+a1713 1
+  struct sortarray sort[MAXDOMAINS];
+d2234 1
+d2244 1
+a2244 1
+  if(*p == '\'')		/* Is this is a +th server ?*/
+d2251 1
+a2251 1
+      server_notice = p;
+d2254 1
+a2254 4
+  (void)sprintf(notice,"[LINKS %s]", server_notice); /* - zaph */
+  sendtoalldcc(notice,SEND_ALL_USERS);
+
+  p = strtok(server_notice," ");
+d2289 8
+a2333 1
+   Don't AUTO_KILL our opers
+d2336 1
+a2336 1
+		  if ( (!okhost(user_host)) && (!isoper(user_host)) )  
+d2399 1
+@
+
+
+1.24
+log
+@fixed broken ontraceuser
+@
+text
+@d35 1
+a35 1
+static char *version="$Id: bothunt.c,v 1.23 1997/04/30 01:44:35 db Exp db $";
+d743 1
+a743 1
+      sendtoalldcc("Ran out of memory in addtohash",ALL_USERS);
+d1011 1
+a1011 1
+      sendtoalldcc("Ran out of memory in adduserhost",ALL_USERS);
+d1166 1
+a1166 1
+  sendtoalldcc(notice,ALL_USERS);
+d1233 1
+a1233 1
+	    sendtoalldcc(notice1,ALL_USERS);
+d1242 1
+a1242 1
+	    sendtoalldcc(notice,ALL_USERS);
+d1253 1
+a1253 1
+	    sendtoalldcc(notice,ALL_USERS);
+d1264 1
+a1264 1
+	    sendtoalldcc(notice,ALL_USERS);
+d1341 1
+a1341 1
+      sendtoalldcc(notice,ALL_USERS);
+d1597 1
+a1597 1
+      sendtoalldcc(notice,ALL_USERS);
+d2168 1
+a2168 1
+	 sendtoalldcc("Ran out of memory in logfailure",ALL_USERS);
+d2237 1
+a2237 1
+  sendtoalldcc(notice,ALL_USERS);
+d2298 1
+a2298 1
+		  sendtoalldcc(notice,ALL_USERS);
+d2429 1
+a2429 1
+    sendtoalldcc(notice,ALL_USERS);
+d2524 1
+a2524 1
+  sendtoalldcc(notice,ALL_USERS);
+d2878 1
+a2878 1
+		      sendtoalldcc(notice,ALL_USERS);
+d2904 1
+a2904 1
+      sendtoalldcc("Ran out of memory in add_to_nick_change_table",ALL_USERS);
+d2911 1
+a2911 1
+      sendtoalldcc(notice,ALL_USERS);
+d3035 1
+a3035 1
+  sendtoalldcc(notice,ALL_USERS);
+@
+
+
+1.23
+log
+@patched to allow +c of form "Dianora (db@@ottawa.net)"
+@
+text
+@d35 1
+a35 1
+static char *version="$Id: bothunt.c,v 1.22 1997/04/23 16:36:33 db Exp db $";
+d333 8
+d347 1
+d355 1
+a355 1
+printf("traceline = [%s]\n", traceline );
+d358 4
+a361 3
+    isoper = YES;
+
+printf("oper found in trace\n");
+d372 11
+a382 1
+	    *userhost = 0;
+d384 2
+a385 1
+printf("nuh = [%s] userhost = [%s] isoper=%d\n", nuh, userhost,isoper);
+d497 2
+a498 1
+/* Chop a string of form "nick [user@@host]" or "nick[user@@host]" into
+d504 10
+d519 1
+a519 1
+  char skip = 0;
+d534 2
+d545 3
+d587 1
+a587 1
+    skip = 1;
+@
+
+
+1.22
+log
+@added .ignore .lignore
+@
+text
+@d35 1
+a35 1
+static char *version="$Id: bothunt.c,v 1.21 1997/04/14 17:06:19 db Exp db $";
+d486 1
+d494 22
+@
+
+
+1.21
+log
+@check point
+@
+text
+@d35 1
+a35 1
+static char *version="$Id: bothunt.c,v 1.20 1997/04/03 21:11:15 db Exp db $";
+d683 1
+a683 1
+      sendtoalldcc("Ran out of memory in addtohash",NO);
+d951 1
+a951 1
+      sendtoalldcc("Ran out of memory in adduserhost",NO);
+d1106 1
+a1106 1
+  sendtoalldcc(notice,NO);
+d1173 1
+a1173 1
+	    sendtoalldcc(notice1,NO);
+d1182 1
+a1182 1
+	    sendtoalldcc(notice,NO);
+d1193 1
+a1193 1
+	    sendtoalldcc(notice,NO);
+d1204 1
+a1204 1
+	    sendtoalldcc(notice,NO);
+d1281 1
+a1281 1
+      sendtoalldcc(notice,NO);
+d1537 1
+a1537 1
+      sendtoalldcc(notice,NO);
+d1892 1
+a1892 1
+inputs		- socket
+d1897 1
+a1897 1
+void print_help(socket)
+d1899 1
+d1903 1
+d1906 9
+a1914 1
+  if( (userfile = fopen(HELP_FILE,"r")) == (FILE *)NULL)
+d1916 10
+a1925 2
+      prnt(socket,"Help is not currently available\n");
+      return;
+d2108 1
+a2108 1
+	 sendtoalldcc("Ran out of memory in logfailure",NO);
+d2177 1
+a2177 1
+  sendtoalldcc(notice,NO);
+d2238 1
+a2238 1
+		  sendtoalldcc(notice,NO);
+d2369 1
+a2369 1
+    sendtoalldcc(notice,NO);
+d2464 1
+a2464 1
+  sendtoalldcc(notice,NO);
+d2818 1
+a2818 1
+		      sendtoalldcc(notice,NO);
+d2844 1
+a2844 1
+      sendtoalldcc("Ran out of memory in add_to_nick_change_table",NO);
+d2851 1
+a2851 1
+      sendtoalldcc(notice,NO);
+d2975 5
+a2979 1
+  sendtoalldcc(notice,NO);
+a2980 1
+/* Probably don't need to log klines.
+d2988 1
+a2988 1
+*/
+@
+
+
+1.20
+log
+@glines added
+@
+text
+@d35 1
+a35 1
+static char *version="$Id: bothunt.c,v 1.19 1997/04/02 20:16:33 db Exp db $";
+d83 11
+d100 1
+a100 1
+char *chopuh();
+d114 2
+d152 1
+d210 8
+d222 1
+a222 1
+  sprintf(hold,"OPER %s %s\nMODE %s :+sckrn\n", 
+d228 8
+d239 4
+a242 3
+  if (*text == '\001') {
+    onctcp (nick, userhost, text);
+    return;
+d244 4
+a247 3
+  if (*output == '#' || *output == '&') {
+    if (!strncasecmp(text,"clones",6))
+      report_clones(0);
+d251 8
+d269 1
+a269 1
+      sprintf(hold,"MODE %s +nt\n",mychannel);
+d296 1
+a296 1
+  sprintf(randnick,"%s%1d",dfltnick, rand() % 10);
+d317 1
+a317 1
+    sprintf(newchan,"%.78s2",defchannel);
+d322 1
+a322 1
+      sprintf(newchan,"%.78s%1d",defchannel,i+1);
+d327 8
+d339 3
+d346 7
+d364 2
+a365 1
+	  adduserhost(nuh,userhost,1);
+d447 2
+a448 2
+	if(*p != '*')	/* A non wild card found in the hostname? */
+	  non_lame_host_o = YES;	/* GOOD a non lame host O line */
+d457 1
+a457 1
+       */
+d459 12
+a470 12
+	  {
+	    userlist[user_list_index].userathost = strdup(user_at_host);
+	    if(userlist[user_list_index].userathost == (char *)NULL)
+	      {
+		fprintf(stderr,"memory allocation error in load_userlist()\n");
+		exit(1);
+	      }
+	    userlist[user_list_index].usernick = (char *)NULL;
+	    userlist[user_list_index].password = (char *)NULL;
+	    userlist[user_list_index].type = TYPE_OPER;
+	    user_list_index++;
+	  }
+d568 5
+d577 1
+a577 1
+      adduserhost(notice,userhost,0);
+d745 35
+d922 2
+a923 1
+		- 
+d931 4
+a934 2
+void adduserhost(nick,userhost,fromtrace)
+char *nick,*userhost,fromtrace;
+d964 1
+d1021 1
+d1083 1
+a1083 1
+      sprintf(notice,"%d more possible clones (%d total) from %s:",
+d1095 3
+a1097 2
+      sprintf(notice,"Possible clones from %s detected: %d connects in %d seconds",
+            host, clonecount, now - oldest);
+d1100 3
+a1102 2
+	fprintf(logging_fp,"Possible clones from %s detected: %d connects in %d seconds\n",
+            host, clonecount, now - oldest);
+d1122 1
+a1122 1
+	    sprintf(notice1,"  %s is %s@@%s (%2.2d:%2.2d:%2.2d)",
+d1128 1
+a1128 1
+	    sprintf(notice,"  %s is %s@@%s (%2.2d:%2.2d:%2.2d)",
+d1279 1
+a1279 1
+      sprintf(notice,"Ran out of memory in suggest_kline");
+a1366 4
+printf("okhost(%s) = %d\n", userathost, okhost(userathost));
+printf("isoper(%s) = %d\n", userathost, isoper(userathost));
+sleep(2);
+
+d1385 1
+a1385 1
+		  sprintf(notice,
+d1391 2
+a1392 1
+		  sprintf(hold,"KLINE *@@%s :Auto-kline, %s %02d/%02d/%02d\n",
+d1401 2
+a1402 1
+		  sprintf(notice,"/quote kline *@@%s :%s %02d/%02d/%02d",
+d1415 5
+a1419 4
+	      sprintf(notice,"/quote kline *@@%s :%s %02d/%02d/%02d",
+		      host,reason,
+		      (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+		      broken_up_time->tm_year);
+d1442 1
+a1442 1
+		  sprintf(notice,
+d1448 2
+a1449 1
+		  sprintf(hold,"KLINE ~*@@%s :Auto-kline, %s %02d/%02d/%02d\n",
+d1456 2
+a1457 1
+		  sprintf(notice,"/quote kline ~*@@%s :%s %02d/%02d/%02d",
+d1467 2
+a1468 1
+	      sprintf(notice,"/quote kline ~*@@%s :%s %02d/%02d/%02d",
+d1493 1
+a1493 1
+	       sprintf(notice,
+d1499 2
+a1500 1
+	       sprintf(hold,"KLINE *%s@@%s :%s %02d/%02d/%02d\n",
+d1507 2
+a1508 1
+	       sprintf(notice,"/quote kline *%s@@%s :%s %02d/%02d/%02d",
+d1518 2
+a1519 1
+	  sprintf(notice,"/quote kline *%s@@%s :%s %02d/%02d/%02d",
+d1669 2
+a1670 1
+    sprintf(outmsg,"  %-40s %3d users\n",sort[found].domainrec->domain,maxx);
+d1674 5
+a1678 3
+  if (!foundany) {
+    sprintf(outmsg,"No domains have %d or more users.\n",num);
+    prnt(socket,outmsg);
+d1710 6
+a1715 5
+        while (temp) {
+          if (!strcmp(temp->info->user,userptr->info->user) &&
+              !strcmp(temp->info->domain,userptr->info->domain))
+            numfound++;	/* - zaph & Dianora :-) */
+          temp = temp->collision;
+d1717 14
+a1730 12
+        if (numfound) {
+          if (!foundany++)
+            prnt(socket,"Multiple clients from the following userhosts:\n");
+          notip = strncmp(userptr->info->domain,userptr->info->host,
+                          strlen(userptr->info->domain)) ||
+                  (strlen(userptr->info->domain) == strlen(userptr->info->host));
+	  numfound++;	/* - zaph and next line*/
+          sprintf(outmsg," %s %2d connections -- %s@@%s%s\n",
+                  (numfound > 2) ? "==>" : "   ",numfound,userptr->info->user,
+                  notip ? "*" : userptr->info->domain,
+                  notip ? userptr->info->domain : "*", numfound);
+          prnt(socket,outmsg);
+d1739 57
+d1801 2
+a1802 2
+  struct hashrec *userptr;
+  char fulluh[100];
+d1811 15
+a1825 9
+      while (userptr) {
+        sprintf(fulluh,"%s@@%s",userptr->info->user,userptr->info->host);
+        if (!wldcmp(userhost,fulluh)) {
+          if (!numfound++) {
+            sprintf(outmsg,"The following clients match %.150s:\n",userhost);
+            prnt(socket,outmsg);
+            }
+          sprintf(outmsg,"  %s (%s)\n",userptr->info->nick,fulluh);
+          prnt(socket,outmsg);
+d1831 2
+a1832 1
+      sprintf(outmsg,"%d matches for %s found\n",numfound,userhost);
+d1834 2
+a1835 1
+      sprintf(outmsg,"No matches for %s found\n",userhost);
+d1837 1
+a1837 1
+    }
+d3004 44
+@
+
+
+1.19
+log
+@checkpoint, tons of changes remote bot linking etc.
+@
+text
+@d35 1
+a35 1
+static char *version="$Id: bothunt.c,v 1.18 1997/03/23 18:43:38 db Exp db $";
+d93 8
+a100 8
+void check_nick_flood();
+void cs_nick_flood();
+void cs_clones();
+void link_look_notice();
+void init_nick_change_table();
+void add_to_nick_change_table();
+void report_nick_flooders();
+void suggest_kline();
+d409 1
+a409 1
+	    userlist[user_list_index].type = 0;
+d540 1
+d544 1
+d856 1
+a856 1
+  newuser->user[10] = 0;
+d858 1
+a858 1
+  newuser->host[79] = 0;
+d1270 2
+d1279 1
+a1279 1
+          if ( (!okhost(userathost)) && (!isoper(userathost)))  
+d1296 2
+d1302 1
+d1308 2
+d1317 1
+d1319 1
+d1322 1
+d1423 1
+a1423 1
+  if(*notice != '\0')
+d1976 1
+a1976 1
+  (void)sprintf(notice,"server_notice = [LINKS %s]", server_notice); /* - zaph */
+d2788 1
+d2822 20
+d2843 1
+@
+
+
+1.18
+log
+@fixed typo in clearhash() duh
+@
+text
+@d15 6
+d35 1
+a35 1
+static char *version="$Id: bothunt.c,v 1.17 1997/03/19 19:55:45 db Exp db $";
+d53 1
+d80 1
+a80 1
+extern char *userlist[];
+d102 1
+d123 2
+d157 1
+a157 1
+char doingtrace = 0;
+d160 1
+a160 1
+  char user[11];
+d203 1
+d225 6
+a230 5
+  if (!strcmp(mynick,nick)) {
+    strncpy(mychannel,channel,79);
+    mychannel[79] = 0;
+    sprintf(hold,"MODE %s +nt\n",mychannel);
+    toserv(hold);
+d237 4
+a240 3
+  if (!strcmp(mynick,nick)) {
+    join(mychannel);
+    *mychannel = 0;
+d278 5
+a282 4
+  else {
+    channel += strlen(defchannel);
+    i = atoi(channel);
+    sprintf(newchan,"%.78s%1d",defchannel,i+1);
+d296 12
+a307 10
+  if (nuh) {
+    nuh = strchr(nuh+1,' ');      /* Skip class */
+    if (nuh) {
+      ++nuh;
+      userhost = strchr(nuh,' ');
+      if (userhost)
+        *userhost = 0;
+      userhost = chopuh(nuh);
+      adduserhost(nuh,userhost,1);
+      }
+d313 4
+a316 3
+  if (doingtrace) {
+    doingtrace = 0;
+    join(defchannel);
+d333 4
+d394 19
+a412 1
+    userlist[user_list_index++] = strdup(user_at_host);
+d431 35
+a465 31
+  if (!uh) {
+    uh = strchr(nickuserhost,'[');
+    if (strchr(uh+1,'[')) {
+      /* moron has a [ in the nickname or username.  Let's do some AI crap. */
+      uh = strchr(uh,'~');
+      if (!uh) {
+        /* No tilde to guess off of... means the lamer checks out with
+           identd and has (more likely than not) a valid username.
+           Find the last [ in the string and assume this is the
+           divider, unless it creates an illegal length username
+           or nickname */
+        uh = nickuserhost + strlen(nickuserhost);
+        while (--uh != nickuserhost)
+          if (*uh == '[' && *(uh+1) != '@@' && uh - nickuserhost < 10)
+            break;
+        }
+      else {
+        /* We have a ~ which is illegal in a nick, but also valid
+           in a faked username.  Assume it is the marker for the start
+           of a non-ident username, which means a [ should precede it. */
+        if (*(uh-1) == '[')
+          --uh;
+        else
+          /* Idiot put a ~ in his username AND faked identd.  Take the
+             first [ that precedes this, unless it creates an
+             illegal length username or nickname */
+          while (--uh != nickuserhost)
+            if (*uh == '[' && uh - nickuserhost < 10)
+              break;
+        }
+      }
+d469 1
+d482 8
+d540 3
+d552 1
+a552 1
+  char dccbuff[120];
+d632 1
+d705 19
+a723 10
+  if (isdigit(*domain)) {
+    /* IP */
+    domain = tmp;
+    while (*domain) {
+      iphold[i++] = *domain;
+      if (*(domain++) == '.' && founddot++)
+        break;
+      }
+    iphold[i] = 0;
+    domain = iphold;
+d780 20
+a799 10
+  if (isdigit(*domain)) {
+    /* IP */
+    domain = tmp;
+    while (*domain) {
+      iphold[i++] = *domain;
+      if (*(domain++) == '.' && founddot++)
+        break;
+      }
+    iphold[i] = 0;
+    domain = iphold;
+d824 3
+d863 18
+a880 10
+  if (isdigit(*domain)) {
+    /* IP */
+    domain = tmp;
+    while (*domain) {
+      iphold[i++] = *domain;
+      if (*(domain++) == '.' && founddot++)
+        break;
+      }
+    iphold[i] = 0;
+    domain = iphold;
+d905 1
+a905 1
+  doingtrace = 1;
+d1106 5
+a1110 2
+  (void)fclose(logging_fp);
+  logging_fp = (FILE *)NULL;
+d1125 4
+d1142 1
+d1156 8
+d1166 2
+d1259 4
+d1270 6
+a1275 2
+   first to a hosttable so we aren't klining our own users etc. - Phisher */
+          if (!okhost(host))  
+d1301 1
+d1306 2
+d1321 1
+a1321 1
+          if (!okhost(host))  
+d1347 1
+d1352 1
+d1369 1
+a1369 1
+      if(!okhost(suggested_host))
+d1395 1
+d1400 1
+d1411 5
+a1415 2
+  msg(mychannel,notice);
+  sendtoalldcc(notice,NO);
+a1656 2
+#ifdef ISLOCALOPER 
+
+d1681 1
+a1681 1
+          fprintf(logging_fp,"%s listkilled %s\n",
+a1694 13
+#else
+
+void kill_list_users(socket,userhost)
+int socket;
+char *userhost;
+{
+    char sendmsg[MAX_BUFF];
+    sprintf(sendmsg,"This command is disabled in Global Operator connection Monitors");
+    sendtoalldcc(sendmsg,NO);
+}
+
+#endif
+
+d2029 4
+a2032 3
+		  fprintf(logging_fp,
+			  "possible LINK LOOKER  = %s [%s]\n",
+			  nick_reported,user_host);
+d2038 2
+d2042 1
+a2042 1
+		  if(!okhost(user_host))
+d2068 5
+a2072 2
+		  (void)fclose(logging_fp);
+		  logging_fp = (FILE *)NULL;
+d2156 2
+a2157 4
+  /* debug cruft that can be removed sometime - Dianora */
+  /*  (void)sprintf(notice,"CS nick flood user_host = [%s]", user_host); */
+  sendtoalldcc(notice,NO);
+  /* end of debug cruft that can be removed sometime - Dianora */
+d2160 2
+a2161 1
+  fprintf(logging_fp,"CS nick flood user_host = [%s]\n", user_host);
+d2163 1
+a2163 1
+  if(!okhost(user_host))
+d2197 6
+a2202 2
+  (void)fclose(logging_fp);
+  logging_fp = (FILE *)NULL;
+d2265 3
+a2267 1
+  fprintf(logging_fp,"CS clones = [%s]\n", user_host);
+d2269 6
+a2274 2
+  (void)fclose(logging_fp);
+  logging_fp = (FILE *)NULL;
+d2551 1
+a2551 1
+			  if(!okhost(user_host))
+d2608 5
+a2612 2
+		      (void)fclose(logging_fp);
+		      logging_fp = (FILE *)NULL;
+d2767 6
+a2772 3
+  fprintf(logging_fp,"*** %s\n", server_notice);
+  (void)fclose(logging_fp);
+  logging_fp = (FILE *)NULL;
+a2773 1
+
+d2776 2
+d2779 4
+d2784 26
+@
+
+
+1.17
+log
+@watch free'ing already freed entry
+@
+text
+@d29 1
+a29 1
+static char *version="$Id: bothunt.c,v 1.16 1997/03/14 23:39:38 db Exp db $";
+d68 1
+a68 1
+int autopilot=NO;
+d2581 1
+a2581 2
+	  if(hp->link_count > 0)
+	    hp->link_count--;
+d2583 8
+a2590 2
+	  if(hp->link_count == 0)
+	    (void)free(hp->info); 
+d2601 1
+a2601 2
+	  if(hp->link_count > 0)
+	    hp->link_count--;
+d2603 8
+a2610 2
+	  if(hp->link_count == 0)
+	    (void)free(dp->info);
+@
+
+
+1.16
+log
+@missed toasts KLINE_REPORT oops
+@
+text
+@d29 1
+a29 1
+static char *version="$Id: bothunt.c,v 1.15 1997/03/14 03:56:52 db Exp db $";
+d2581 6
+a2586 1
+	  (void)free(hp->info); 
+d2596 6
+a2601 1
+	  (void)free(dp->info);
+@
+
+
+1.15
+log
+@fixed o: command, removed lame more or less dead code
+@
+text
+@d29 1
+a29 1
+static char *version="$Id: bothunt.c,v 1.14 1997/03/09 05:27:17 db Exp db $";
+d46 1
+d94 1
+d451 6
+d2598 33
+@
+
+
+1.14
+log
+@virtual host support
+@
+text
+@d29 1
+a29 1
+static char *version="$Id: bothunt.c,v 1.13 1997/03/07 21:21:50 db Exp db $";
+a606 1
+	  
+d1849 1
+a1849 1
+  (void)sprintf(notice,"server_notice = [LINKS%s]", server_notice); /* - zaph */
+@
+
+
+1.13
+log
+@many changes, fixed core dump problem with linux, added some early link code
+@
+text
+@d29 1
+a29 1
+static char *version="$Id: bothunt.c,v 1.12 1997/03/07 18:47:21 db Exp db $";
+d124 2
+a125 2
+  char host[80];
+  char domain[80];
+d149 1
+a149 1
+  char host[80];
+d258 1
+a258 1
+  char newchan[80];
+d770 1
+a770 1
+  strncpy(newuser->host,tmp,80);
+d794 2
+a795 2
+  strncpy(newuser->domain,(*domain=='.' ? domain+1 : domain),80);
+  newuser->domain[79] = 0;
+d1617 1
+d1619 1
+a1619 1
+ */
+d1788 1
+a1788 1
+    strncpy(tmp->host,host,80);
+d2037 1
+a2037 1
+  (void)sprintf(notice,"CS nick flood user_host = [%s]", user_host);
+@
+
+
+1.12
+log
+@new entry in struct connections
+@
+text
+@d29 1
+a29 1
+static char *version="$Id: bothunt.c,v 1.11 1997/01/05 18:56:20 db Exp db $";
+d117 2
+a118 1
+	- Dianora (db) db@@diana.intacc.net
+d121 1
+a121 1
+struct userentry {
+d126 1
+d129 1
+a129 1
+  };
+d133 1
+a133 1
+    struct userentry *info;
+d140 1
+a140 1
+typedef  struct sortarray {
+d333 1
+d544 1
+a544 1
+struct userentry *item;
+d564 1
+a564 1
+/*
+d593 13
+a605 1
+	  (void)free(find->info); /* shouldn't this be freed too? - Dianora */
+d607 1
+d724 1
+a724 1
+/*
+d726 1
+a726 1
+    if (!removefromhash(hosttable,tmp,tmp,userhost,0))
+d728 1
+d730 1
+a730 1
+    if (!removefromhash(domaintable,domain+1,tmp,userhost,0))
+d732 10
+a742 1
+}
+d747 1
+a747 1
+  struct userentry *newuser;
+d758 2
+a759 2
+  newuser = (struct userentry *)malloc(sizeof(struct userentry));
+  if( newuser == (struct userentry *)NULL)
+d774 1
+d1458 1
+a1458 1
+            ++numfound;
+d1467 1
+d1469 1
+a1469 1
+                  (++numfound > 2) ? "==>" : "   ",numfound,userptr->info->user,
+d1849 1
+a1849 1
+  (void)sprintf(notice,"server_notice = [%s]", server_notice);
+d2035 1
+d2038 2
+@
+
+
+1.11
+log
+@My compiler never even NOTICED I had '\*' instead of '*' duh. thanks cdy
+@
+text
+@a14 1
+#include "config.h"
+d26 2
+d29 1
+a29 1
+static char *version="$Id: bothunt.c,v 1.10 1997/01/05 04:29:47 db Exp db $";
+d64 1
+d239 1
+a239 1
+  sprintf(randnick,"%s%1d",dfltnick, random() % 10);
+d550 1
+d708 1
+a708 1
+
+d715 1
+d735 1
+d1553 2
+d1556 4
+d1568 1
+a1568 1
+  if( (userfile = fopen("help.txt","r")) == (FILE *)NULL)
+d1581 31
+d1752 1
+d2467 2
+a2468 2
+      (void)sprintf(notice,"Ran out of memory in add_to_nick_change_table");
+      sendtoalldcc(notice,NO);
+@
+
+
+1.10
+log
+@lame O line detction, fixed AUTO modes to include suggested kline
+@
+text
+@d28 1
+a28 1
+static char *version="$Id: bothunt.c,v 1.9 1997/01/01 01:41:57 db Exp db $";
+d345 1
+a345 1
+      if(*p != '\*')	/* A non wild card found in the username? */
+d360 1
+a360 1
+	if(*p != '\*')	/* A non wild card found in the hostname? */
+@
+
+
+1.9
+log
+@autopilot, auto kill nick flooders, auto kill link lookers code added
+@
+text
+@d28 1
+a28 1
+static char *version="$Id: bothunt.c,v 1.8 1996/12/19 04:19:18 db Exp db $";
+a90 1
+void suggest_nick_kline();
+d107 4
+a110 1
+  "LINKS requested by ",
+d190 1
+a190 1
+char *userhost, *nick, *text, *output;
+d305 6
+d317 3
+d321 5
+a325 1
+  user_at_host = strtok(body," ");
+d331 1
+a331 1
+  user_at_host = strtok((char *)NULL," ");
+d337 16
+a352 1
+  if( user_list_index == (MAXUSERS - 1))
+d355 12
+a366 1
+  userlist[user_list_index++] = strdup(user_at_host);
+d925 2
+a926 1
+	    suggest_kline(find->info->user,
+a985 31
+suggest_nick_kline
+
+inputs	- userhost
+output	- none
+side effects
+	connected opers are dcc'ed a suggested kline
+
+	- Dianora 
+*/
+void suggest_nick_kline(userhost)
+char *userhost;
+{
+char *user;
+char *host;
+char *p;
+int identd=YES;
+
+  p = strdup(userhost);
+  user = strtok(userhost,"@@");
+  if(*user == '~')
+    {
+      user++;
+      identd = NO;
+    }
+
+  host = strtok((char*)NULL,"");
+  suggest_kline(user,host,NO,identd,"nick flooding");
+  (void)free(p);
+}
+
+/*
+d1000 2
+a1001 1
+void suggest_kline(user,host,different,identd,reason)
+d1008 1
+a1008 1
+char notice[MAX_BUFF];
+d1010 1
+a1010 1
+char hold[MAX_BUFF];
+d1012 8
+a1019 8
+char *work_host;	/* copy of the host name */
+char *suggested_host;	/* what will be suggested as host to kline */
+char *p;
+char *q;
+int number_of_dots=0;	/* how many dots in the name ? */
+int ip_number = YES;
+time_t current_time;
+struct tm *broken_up_time;
+d1126 1
+a1126 1
+	      if(autopilot)
+d1169 1
+a1169 1
+	      if(autopilot)
+d1215 1
+a1215 1
+	   if(autopilot)
+d1282 5
+a1286 5
+int i;
+NICK_CHANGE_ENTRY *ncp;
+char outmsg[MAX_BUFF];
+int reported_nick_flooder= NO;
+time_t current_time;
+d1557 4
+a1560 4
+  userfile = fopen("help.txt","r");
+  if (!userfile) {
+    prnt(socket,"Help is not currently available\n");
+    return;
+d1562 4
+a1565 2
+  while (fgets(line, MAX_BUFF-1, userfile) != NULL) {
+    prnt(socket,line);
+d1741 7
+d1754 2
+d1766 25
+a1790 1
+  nick_reported = strtok(server_notice," ");
+d1822 3
+a1845 1
+		  (void)fclose(logging_fp);
+d1847 8
+d1856 1
+a1856 3
+		  if(autopilot)
+		    {
+		      if(!okhost(user_host))
+d1861 2
+d1864 10
+d1875 3
+d1879 2
+a1880 2
+		  (void)free(link_look[i].user_host);
+		  link_look[i].user_host = (char *)NULL;
+d1932 6
+a1937 4
+char *nick_reported;
+char *user_host;
+char *p;
+char notice[MAX_BUFF];
+d1968 3
+d1972 1
+a1972 3
+  if(autopilot)
+    {
+      if(!okhost(user_host))
+d1974 1
+a1974 1
+	  (void)sprintf(notice,"KILL %s :nick flooding\n", nick_reported );
+d1977 15
+a1991 1
+    }
+d1993 8
+a2000 1
+  suggest_nick_kline(user_host);
+d2002 1
+d2004 1
+d2020 7
+a2026 7
+int identd = YES;
+char *user;
+char *host;
+char *p;
+char *nick_reported;
+char *user_host;
+char notice[MAX_BUFF];
+d2068 1
+a2068 1
+  suggest_kline(user,host,NO,identd,"clones");
+d2070 1
+d2087 4
+a2090 4
+char *p;
+char *nick1;
+char *nick2;
+char *user_host;
+d2189 1
+a2189 1
+int i;
+d2209 1
+a2209 1
+int i;
+d2259 2
+d2333 11
+d2345 28
+a2372 8
+  if(autopilot)
+    {
+      if(!okhost(user_host))
+	{
+	  (void)sprintf(hold,"KILL %s :nick flooding\n", last_nick );
+	  toserv(hold);
+	}
+    }
+d2374 10
+a2383 1
+		      suggest_nick_kline(ncp->user_host);
+d2487 5
+a2491 5
+int i;
+HASHREC *hp;
+HASHREC *next_hp;
+HASHREC *dp;
+HASHREC *next_dp;
+a2515 1
+
+@
+
+
+1.8
+log
+@CS uses (user@@host) for nick flooding, but [user@@host] for clones.
+go figure.
+@
+text
+@d28 1
+a28 1
+static char *version="$Id: bothunt.c,v 1.7 1996/12/18 03:12:05 db Exp db $";
+d42 3
+d64 4
+d86 1
+d106 3
+d167 10
+d431 3
+d744 7
+d755 1
+a778 1
+
+d1114 20
+a1133 9
+	      sprintf(notice,"Adding Auto Kline for *@@%s :%s %02d/%02d/%02d",
+		      host,reason,
+		      (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+		      broken_up_time->tm_year);
+
+              sprintf(hold,"KLINE *@@%s :Auto-kline, %s %02d/%02d/%02d\n",
+	    	      host,reason,
+                      (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+                      broken_up_time->tm_year);
+d1157 20
+a1176 9
+	      sprintf(notice,"Adding Auto Kline for ~*@@%s :%s %02d/%02d/%02d",
+		      suggested_host,reason,
+		      (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+		      broken_up_time->tm_year);
+
+              sprintf(hold,"KLINE ~*@@%s :Auto-kline, %s %02d/%02d/%02d\n",
+	    	      suggested_host,reason,
+                      (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+                      broken_up_time->tm_year);
+d1203 20
+a1222 9
+	   sprintf(notice,"Adding Auto Kline for *%s@@%s :%s %02d/%02d/%02d",
+		   user,suggested_host,reason,
+		   (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+		   broken_up_time->tm_year);
+
+	   sprintf(hold,"KLINE *%s@@%s :%s %02d/%02d/%02d\n",
+		   user,suggested_host,reason,
+		   (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+		   broken_up_time->tm_year);
+d1713 134
+d1873 3
+a1875 2
+  if(*user_host == '(')
+    user_host++;
+d1877 14
+a1890 3
+  p = strrchr(user_host,')');
+  if(p)
+    *p = '\0';
+d1892 1
+a1892 1
+  (void)sprintf(notice,"CS nick flood user_host = [%s]\n", user_host);
+d1896 10
+d1907 1
+d1938 4
+d1943 13
+a1955 5
+    user_host++;
+
+  p = strrchr(user_host,']');
+  if(p)
+    *p = '\0';
+d2099 20
+d2162 10
+a2171 7
+char notice[MAX_BUFF];
+int i;
+int found_entry=NO;
+int found_empty_entry=INVALID;
+NICK_CHANGE_ENTRY *ncp;
+time_t current_time;
+struct tm *tmrec;
+d2234 10
+d2245 1
+a2245 1
+
+@
+
+
+1.7
+log
+@when AUTO_KLINE isn't defined, make sure hold isn't used DOLT!
+@
+text
+@d28 1
+a28 1
+static char *version="$Id: bothunt.c,v 1.1 1996/12/09 00:34:54 db Exp db $";
+d1656 3
+d1717 1
+a1717 1
+  if(*user_host == '(')
+d1720 1
+a1720 1
+  p = strrchr(user_host,')');
+@
+
+
+1.6
+log
+@email changes etc.
+@
+text
+@d978 1
+d980 1
+@
+
+
+1.5
+log
+@CSr fixes, phisher mods
+@
+text
+@d1679 2
+d1682 1
+d1731 3
+d1735 1
+@
+
+
+1.4
+log
+@AUTO_KLINE added, make sure userlist is properly setup
+@
+text
+@d32 2
+a33 1
+#define UNAUTHORIZED 2
+d37 5
+d77 2
+d89 2
+a90 1
+  "Rejecting ",
+d93 5
+a306 4
+void on_stats_o_done()
+{
+}
+
+d314 1
+d376 4
+a379 3
+    if (!strncmp(notice,msgs_to_mon[i],strlen(msgs_to_mon[i]))) {
+      notice += strlen(msgs_to_mon[i]);
+      break;
+d381 3
+a383 1
+  switch (i) {
+d401 9
+a409 1
+    break;
+d420 1
+d427 4
+a430 2
+    notice(nick,"\001VERSION TexasNet Connection Monitor Service by Hendrix [jimi@@texas.net]\001");
+    notice(nick,"\001VERSION tcm-dianora-v0.3.3 db@@diana.intacc.net\001");
+d432 2
+a433 1
+    notice(nick,"\001VERSION auto-kline by Phisher\001");
+d966 3
+d978 2
+d1081 4
+a1084 2
+              sprintf(notice,"Adding Auto Kline for *@@%s",
+                      host);
+d1091 9
+a1099 5
+#else
+	  sprintf(notice,"/quote kline *@@%s :%s %02d/%02d/%02d",
+		  host,reason,
+		  (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+		  broken_up_time->tm_year);
+d1123 9
+a1131 6
+#else
+	  sprintf(notice,"/quote kline ~*@@%s :%s %02d/%02d/%02d",
+		  suggested_host,reason,
+		  (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+		  broken_up_time->tm_year);
+
+d1146 1
+a1146 1
+      if(okhost(suggested_host)
+d1153 1
+a1153 1
+	   sprintf(hold,"KLINE *%s@@%s :%s %02d/%02d/%02d",
+d1158 9
+a1166 5
+#else
+      sprintf(notice,"/quote kline *%s@@%s :%s %02d/%02d/%02d",
+	      user,suggested_host,reason,
+	      (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+	      broken_up_time->tm_year);
+d1177 1
+d1179 3
+a1181 1
+  toserv(hold);
+d1183 1
+d1417 1
+a1417 1
+#ifdef ISLOCALOPER
+d1471 1
+d1648 85
+d1756 43
+@
+
+
+1.3
+log
+@fixes to sendtoalldcc, added some of phishers mods
+@
+text
+@d1044 15
+d1063 1
+a1063 1
+
+d1067 3
+a1069 4
+		  host,reason,
+		  (broken_up_time->tm_mon)+1,broken_up_time->tm_mday,
+		  broken_up_time->tm_year);
+
+d1073 14
+d1092 1
+d1105 14
+d1123 1
+a1123 1
+
+d1133 3
+@
+
+
+1.2
+log
+@added stats o to get user list of tcm, added tcm.cf file reading
+@
+text
+@d53 1
+d200 1
+a200 1
+  sprintf(randnick,"%s%1d",NAME, random() % 10);
+d207 1
+a207 1
+  else if (strncmp(randnick,NAME,strlen(NAME)))
+d406 3
+d457 1
+a457 1
+      sendtoalldcc("Ran out of memory in addtohash");
+d640 1
+a640 1
+      sendtoalldcc("Ran out of memory in adduserhost");
+d775 1
+a775 1
+  sendtoalldcc(notice);
+d841 1
+a841 1
+	    sendtoalldcc(notice1);
+d850 1
+a850 1
+	    sendtoalldcc(notice);
+d861 1
+a861 1
+	    sendtoalldcc(notice);
+d872 1
+a872 1
+	    sendtoalldcc(notice);
+d954 1
+a954 1
+      sendtoalldcc(notice);
+d1089 1
+a1089 1
+  sendtoalldcc(notice);
+d1312 65
+d1535 1
+a1535 1
+	 sendtoalldcc("Ran out of memory in logfailure");
+d1762 1
+a1762 1
+		      sendtoalldcc(notice);
+d1785 1
+a1785 1
+      sendtoalldcc(notice);
+d1792 1
+a1792 1
+      sendtoalldcc(notice);
+@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@d28 1
+a28 1
+static *version="$Id$";
+d49 6
+a54 3
+extern char mynick[MAX_NICK];
+extern char defchannel[80];
+char mychannel[80];
+d56 2
+d146 2
+a147 1
+  sprintf(hold,"OPER %s %s\nMODE %s :+sckrn\n", ONICK, OPASSWD, mynick);
+d259 39
+d404 1
+d689 9
+@

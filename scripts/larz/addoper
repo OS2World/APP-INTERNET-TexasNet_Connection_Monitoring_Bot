@@ -1,0 +1,24 @@
+#!/bin/sh
+echo tcm addoper script by mjr@blackened.com
+echo this is just a extremely simple script with ZERO error checking
+echo so use it with caution :-\)
+echo 
+echo You will be prompted for the address, password, and permissions.
+echo -n "Enter the operator address: "
+read addr;
+
+echo "Available permissions are as follows:"
+echo "o if the client is an oper"
+echo "k if you want that client to be able to remote kline via the bot"
+echo "g for gline privileges"
+echo "Default permissions for another oper would be okg"
+echo -n "Enter the permissions: "
+read perms;
+
+echo -n "Enter the client's password: "
+read pass;
+
+echo "Ok, the line that will go in the userlist.load file will be:"
+echo $addr:-DCC-:$pass:$perms
+echo adding line to userlist.load file
+echo $addr:-DCC-:$pass:$perms >> userlist.load

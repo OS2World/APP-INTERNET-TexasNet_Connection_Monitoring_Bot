@@ -1,0 +1,22 @@
+ - .close
+    Tell the bot to close down your DCC CHAT connection
+ - .disconnect nick
+    disconnect kick a user off of the bot
+ - .register password (also see .help remote)
+    registers a remote oper for REMOTE_KLINE/KILL etc.
+ - .op nick nick2 nick3 (may require you be registered first)
+    The bot will op those nicks if they are on channel
+ - .opers
+    Shows legal opers, not connections
+ - .connections
+    List all users and opers currently connected to this bot.
+ - .rehash
+    This command reloads the userlist etc.
+ -  .trace
+    retraces the server, this will clear out any "stale" nicks.
+ - .autopilot [ON]|[OFF] (see .help clones)
+
+   AUTO_KLINE/AUTO_KILL_NICK_FLOODING/AUTO_KILL_LINK_LOOKERS modes
+   can be turned on or off with this ( OPERS only)
+   current state can be examined with just autopilot
+

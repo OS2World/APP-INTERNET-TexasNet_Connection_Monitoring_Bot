@@ -1,0 +1,17 @@
+# Username for the bot
+U:db
+# virtual host name if needed
+V:irc.bsd.org
+# O line for the bot with password
+O:dianora:noway
+# Server for the bot
+S:irc.mo.net:6666
+# Nick for the bot
+N:mobot
+# Bot's IRCNAME
+I:irc.mo.net connection monitor bot
+# channel for the bot
+C:&mo.net
+# email address
+# clone logs etc. will get emailed to this address
+#E:

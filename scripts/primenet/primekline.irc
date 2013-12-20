@@ -1,0 +1,279 @@
+# @(#) $Id: kline.irc,v 1.0 1997/02/07 11:37:20 mjr@blackened.com Exp #
+# kline.irc 
+
+# The version
+^assign kver v1.1 02271997 by mjr@blackened.com with Monkster mods
+alias kver eval echo $kver
+
+# I think it's much cleaner to just throw all the commands here
+# for later use
+
+^assign kcommands = /kflood, /kbot, /klink, /kclone, /kperm, /monhelp
+
+# With every kline, we'll tag our address on there.  We'll grab
+# that on startup and keep it as $myuserhost for later use
+
+eval userhost $N -cmd ^assign myuserhost Monkster
+
+# Monkster used to be $$3@$$4
+
+# To avoid messed up klines, we'll check to see if the proper
+# arguments were supplied with every function.  Doing it this
+# way also prevents the need for another 'help file' or a help
+# alias.  Sort of killing two birds with one stone..
+
+alias kflood {
+if ([$0] == []) {
+  echo *** /kflood will kline a user with a reason of "flooding"
+  echo *** USAGE: /kflood <nickname or pattern>
+  }
+  {
+eval /quote kline $0 : Flooding \[Added by $myuserhost\]
+  }
+}
+
+# Not local to the server you want to kline? Use these handy flooder kline
+# aliases. I do not check for a pattern because the monitor bot will do that
+# anyways.
+
+alias eflood msg =primemon2 kline $0 Flooding
+alias wflood msg =primemon kline $0 Flooding
+alias bflood msg =larzmon kline $0 Flooding
+alias allflood eflood $0;wflood $0;bflood $0
+
+alias kbot {
+if ([$0] == []) {
+   echo *** /kbot will kline a user with a reason of "bots are prohibited"
+   echo *** USAGE: /kbot <nickname or pattern>
+  }
+  {
+eval /quote kline $0 : Bots are prohibited \[Added by $myuserhost\]
+  }
+}
+
+# Not local to the server you want to kline? Use these handy bot kline
+# aliases. I do not check for a pattern because the monitor bot will do that
+# anyways.
+
+alias ebot msg =primemon2 kline $0 Bots are prohibited
+alias wbot msg =primemon kline $0 Bots are prohibited
+alias bbot msg =larzmon kline $0 Bots are prohibited
+alias allbot ebot $0;wbot $0;bbot $0
+
+
+alias klink {
+if ([$0] == []) {
+   echo *** /klink will kline a user with a reason of "Link Lookers are 
+   echo *** prohibited"
+   echo *** USAGE: /klink <nickname or pattern>
+  }
+  {
+eval /quote kline $0 :Link Lookers are prohibited \[Added by $myuserhost\]
+  }
+}
+
+# Not local to the server you want to kline? Use these handy llooker kline
+# aliases. I do not check for a pattern because the monitor bot will do that
+# anyways. (and yes, alllink is a bitch to type, but who g lines a link looker)
+
+alias elink msg =primemon2 kline $0 Link Lookers are prohibited 
+alias wlink msg =primemon kline $0 Link Lookers are prohibited
+alias blink msg =larzmon kline $0 Link Lookers are prohibited
+alias alllink elink $0;wlink $0;blink $0
+
+alias kclone {
+if ([$0] == []) {
+   echo *** /kclone will kline a user with a reason of "Clonebots are 
+   echo *** prohibited"
+   echo *** USAGE: /kclone <nickname or pattern>
+   }
+   {
+eval /quote kline $0 : Clones are prohibited \[Added by $myuserhost\]
+   }
+}
+
+# Not local to the server you want to kline? Use these handy cloner kline
+# aliases. I do not check for a pattern because the monitor bot will do that
+# anyways.
+
+alias eclone msg =primemon2 kline $0 Clones are prohibited 
+alias wclone msg =primemon kline $0 Clones are prohibited
+alias bclone msg =larzmon kline $0 Clones are prohibited
+alias allclone eclone $0;wclone $0;bclone $0
+
+
+alias kperm {
+if ([$0] == []) {
+   echo *** /kperm will kline a user and prepend "PERMANANT" to the 
+   echo *** reason that you supply
+   echo *** USAGE: /kperm <nickname or pattern> <reason>
+   }
+if ([$1] == []) {
+	echo *** You also need to supply a reason
+	}
+   {
+eval /quote kline $0 : PERMANANT $1- \[Added by $myuserhost\]
+   }
+}
+
+eval echo *** kline.irc : $kver loaded
+eval echo *** commands available: $kcommands
+eval echo *** For help on the individual commands just type the command  
+eval echo *** without any arguments.
+eval echo *** With Monkster's weird Monitor bot aliases added.
+eval echo *** type /monhelp to see the Monitor bot aliases.
+
+
+# I got tired of asking multiple client users to go down to one client, 
+# so I made it an alias
+
+alias one msg $0 Please go down to only one client 
+
+# Want to find out who is on your server from a channel? This dumb, but
+# effective set of aliases does it.
+
+alias wchan join $0;who -server irc-w.primenet.com $0;timer 3 part $0
+alias echan join $0;who -server irc-e.primenet.com $0;timer 3 part $0
+alias bchan join $0;who -server irc2.blackened.com $0;timer 3 part $0
+
+# Simple server hopping aliases
+
+alias east server irc-e.primenet.com
+alias west server irc-w.primenet.com
+alias black server irc2.blackened.com
+
+# More simple scripts to see who from where is on your server(s)
+
+alias wwho who -server irc-w.primenet.com $0
+alias ewho who -server irc-e.primenet.com $0
+alias bwho who -server irc2.blackened.com $0
+
+# Remote Kill commands for the three servers. Keep in mind the monitor bots
+# do not allow you to add in a kill reason, it will always kill with the 
+# reason of "Multiple connections are not allowed." Again I don't look
+# for a valid pattern since the monitor bot does that. 
+
+alias ekill msg =primemon2 killlist $0 
+alias wkill msg =primemon killlist $0
+alias bkill msg =larzmon killlist $0
+alias allkill ekill $0;wkill $0;bkill $0
+
+# A beautiful trace reformatting script to search out what you want 
+# to find on each server. I love these commands. Try a /allfind shell
+# some time.
+
+alias efind find $0 irc-e.primenet.com
+alias wfind find $0 irc-w.primenet.com
+alias bfind find $0 irc2.blackened.com
+alias allfind efind $0;timer 10 bfind $0;timer 20 wfind $0
+
+# If you don't like using the find commands, here is an option with the
+# monitor bots that does about the same. The difference is the find
+# command can find nicks, and does not required *'s. But the
+# monitor bots use less bandwidth.
+
+alias elist msg =primemon2 list $0
+alias wlist msg =primemon list $0
+alias blist msg =larzmon list $0
+alias alllist elist $0;wlist $0;blist $0
+
+# Make it easier to talk on the monitor bots chatlines.
+
+alias wsay msg =primemon $0-
+alias esay msg =primemon2 $0-
+alias bsay msg =larzmon $0-
+
+# Find clones by server, or for all servers. Another well used command.
+
+alias ecl msg =primemon2 bots
+alias wcl msg =primemon bots
+alias bcl msg =larzmon bots
+alias allcl ecl;wcl;bcl
+
+# Simple alias to dcc chat all the monitor bots at once.
+
+alias monitor dcc chat primemon;dcc chat primemon2;dcc chat larzmon
+
+
+#You can use find by itself if you want, but I use the efind, wfind, 
+# bfind, allfind normally. /find by itself defualts to your local server.
+
+alias find
+{
+	if ([$1]==[]) { ^assign the_server $S } { ^assign the_server $1 }
+	echo *** Looking for $0 on ${the_server}...
+	@ the_list = []
+	@ thedude= [*$0*]
+	^assign FIRST F
+	@ count = 0
+	@ found = 0
+	^on ^200 *
+	^on ^201 *
+	^on ^202 *
+	^on ^203 *
+	^on ^208 * 
+	^on ^209 * {
+		if ([$FIRST]==[F]) {
+			^assign FIRST T
+			echo *** End of Trace Find. Found $found out of $count normal entries.
+		}
+	}
+	^on ^204 * {
+		if ([$rmatch($3 $thedude)] > 0) {
+			echo Oper: $3 [Idle $5] ${the_server}
+			@found = found + 1
+		}
+		@ count = count + 1
+	}
+	^on ^205 * {
+		if ([$rmatch($3 $thedude)] > 0) {
+			echo Find: $3 [Idle $5] ${the_server}
+			@found = found + 1
+		}
+		@ count = count + 1
+	}
+	^on ^206 * {
+		if ([$rmatch($3 $thedude)] > 0) {
+			echo Serv: $3 ${the_server}
+			@found = found + 1
+		}
+		@ count = count + 1
+	}
+	//trace $the_server
+}
+
+# here, use help, its easier :P
+
+alias monhelp {
+
+echo ---------------------------------------------------------------------
+echo *                  MonkScript Help System                           *
+echo *-------------------------------------------------------------------*
+echo * Note: All commands should be prefaced with a b, w, e, or all, for *
+echo * blackened, w.primenet, e.primenet, and all three respectively. For*
+echo * example, the command clone would actually be used as /bclone,     *
+echo * /eclone, /wclone, and /allclone. Okay, on to the commands.        *
+echo *                                                                   *
+echo * /find                    -- Find all users matching a string      *
+echo * /clone                   -- Kline a u@h with the reason of clones *
+echo * /flood                   -- Kline a u@h with the reason of flooder*
+echo * /bot                     -- Kline a u@h with the reason of bot    *
+echo * /list                    -- List all users matching a u@h         *
+echo * /link                    -- Kline a u@h with the reason of LinkLkr*
+echo * /cl                      -- List Multiple clients for a server    *
+echo * /say                     -- Say something on the monitor bot      *
+echo * /kill                    -- Tracekill a u@h with reason clones    *
+echo * /who                     -- Do a /who match for a server only     *
+echo * /chan                    -- Join a channel, see who is on it from *
+echo *                          -- our server, then leave it             *
+echo ---------------------------------------------------------------------
+echo * The rest of the commands are entered exactly as shown, no prefixes*
+echo ---------------------------------------------------------------------
+echo * /one                     -- Tell a nick to go down to one client  *
+echo * /east                    -- Hop to irc-e.primenet.com             *
+echo * /west                    -- Hop to irc-w.primenet.com             *
+echo * /black                   -- Hop to irc2.blackened.com             *
+echo * /monitor                 -- Dcc chat larzmon, primemon, primemon2 *
+echo ----------------------------------------------------------------------
+}
+

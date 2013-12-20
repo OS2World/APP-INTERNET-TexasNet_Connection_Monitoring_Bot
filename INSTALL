@@ -1,0 +1,44 @@
+quickly install guide for tcm-dianora
+
+  Read the config.h file. Its pretty self explanatory... the defaults
+should be fine to start. If you want to play with AUTO_KLINE etc.
+be sure to uncomment those defines out. Phisher, mbundy are using them
+and I have been using them on irc.ionet.net  It really nails the
+abusers especially at night..
+
+  The Makefile defines what the OS is, etc.
+
+  The biggie is the tcm.cf file Its pretty straight forward
+
+# Username for the bot
+U:db
+# O line for the bot with password
+O:dianora:noway
+# Server for the bot
+S:irc.mo.net:6666
+# Nick for the bot
+N:mobot
+# Bot's IRCNAME
+I:irc.mo.net connection monitor bot
+# channel for the bot
+C:&mo.net
+# email address
+# clone logs etc. will get emailed to this address
+#E:
+
+  Also included is a fix_help sh script
+./fix_help irc.mo.net 
+./fix_help irc.ionet.net 
+etc. etc. just takes the help.txt.dist file, and customizes the
+SERVER name to be yours. The help.txt file should be in the same
+directory as the run, tcm binary and tcm.cf files
+
+  run is a simple sh script, that keeps the tcm restarting if it
+dies.
+
+  So... when you have the tcm binary, and the help.txt file customized
+for your server.. ./run& will start things up
+The nice thing about the tcm.cf file is, you can share tcm binaries...
+all you have to do is customize the help file and change the tcm.cf
+
+- Dianora

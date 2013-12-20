@@ -1,0 +1,310 @@
+head	1.4;
+access;
+symbols;
+locks; strict;
+comment	@# @;
+
+
+1.4
+date	97.05.03.16.32.47;	author db;	state Exp;
+branches;
+next	1.3;
+
+1.3
+date	97.05.03.16.27.59;	author db;	state Exp;
+branches;
+next	1.2;
+
+1.2
+date	97.04.25.20.56.16;	author db;	state Exp;
+branches;
+next	1.1;
+
+1.1
+date	97.04.25.06.16.10;	author db;	state Exp;
+branches;
+next	;
+
+
+desc
+@original readme file for tcm-dianora
+@
+
+
+1.4
+log
+@v0.4.1
+@
+text
+@This is an update of the Hendrix bot tcm. 
+
+1) Found and fixed two memory leaks.
+
+2) clone report will now suggest a kline to use for cloners.
+   Very easy to cut and paste to suit. (Shadowfax can now beat me
+   doing a clone kline)
+
+3) If you have +n compatible with LT, tcm will report nick flooders
+   and will update the nicks shown in the bot list.
+
+4) two new commands added "clear" clears and retraces to update the
+   bot list. Probably of limited value to those of you with +n
+   "nflood" reports the current nick flooders.
+
+5) moved the OPER name password into config.h for convenience.
+   ditto with the DOMAIN (for bsdi) 
+
+6) "stole" some ideas from garfr and talen
+   unrecognized commands will now be sent to all connected users
+   i.e. a "chat line"
+
+7) clonebots and nick flooders are now logged in a date stamped
+   log. "clone_log_mm_dd_yy" I'll be changing that to email
+   etc. later on. 
+
+v0.3.2
+
+8) found missing #include <time.h> SUNOS needs
+   also missing Makefile (duh!)
+
+9) added support for teletypes slightly different version of nick
+   flood reporting. (He may have fixed it back to be compatible with LT)
+   (#define TELETYPE_NIH if you  need this :-) HI teletype!! )
+
+v0.3.3
+
+v0.3.4 was small typo bug fix to  v0.3.3 *sigh*
+
+10) Found solaris bug preventing dcc chat to the bot to work.
+    Its what I thought it was. :-) /dcc chat sends the precalculated
+    sin_addr to use as a decimal. strtol under SOLARIS signed
+    extended and munges the address. I can't think of any systems
+    where strtol() wouldn't munge the address... except possibly
+    one where long long (64) numbers were standard.. let me know.
+
+11) Put everything under rcs control. About fripping time.
+    I'll include the ,v in any release I do from now on.
+
+12) Fixed the bot so that updates can be done on the fly with 
+    a kill -HUP pid on the host machine
+
+13) userlist is now derived from doing a stats O on the server
+    no more separate userlist.load needed
+
+14) OPER_ONLY define in config.h for admins who don't want non-opers
+    connecting to tcm
+
+15) CONFIG_FILE a config file for usernick, realname, server, port etc.
+    is now defined in config.h sample file "tcm.cf" included
+
+16) opers may now send messages on the partyline to only other opers
+    (not other users who may be happened to be connected) by prefacing
+    the messages with 'o:' or 'O:' each oper connected will then see
+    [Opers Only]<nick> message...
+
+17) tcm will email recipients given in E: line in tcm.cf copies
+    of the previous night clone logs. This should happen just
+    after the next clone report occurs just after midnight.
+    SIGUSR1 could be commandered to force this, with an entry
+    in the crontab. be my guest. :-)
+
+18) CS style nick flooding reports and clone flood reports are
+    now at least logged, and a suggested kline is given.
+
+19) Phisher's AUTO_KLINE code is included if you want to try it.
+    Shadowfax doesn't like the idea but you might.
+
+  - Dianora, Tue Dec 17 21:56:20 EST 1996
+    db@@diana.intacc.net
+ 
+v0.3.5 
+
+20) op command added i.e. you can op yourself from the dcc connection
+    using "op nick" on the channel the bot sits on at 
+
+21) REMOTE_KLINE if defined, this will allow someone to do a kline
+    from the bot command line. You will note, that load_userlist()
+    has been added back, which means you could allow someone to
+    kline bots from the bot, who isn't an o/O on your server...
+    (gentle hint, linked tcms......) (this was mbundy's idea)
+    
+22) AUTO_KILL_NICK_FLOODING if defined, in config.h
+    nick flooders are only killed, not k-lined.
+    should work for both CS and non CS servers. This can be defined
+    without AUTO_KLINE
+
+23) AUTO_KILL_LINK_LOOKERS, if defined, in config.h
+    will kill link lookers. Look at the configurable parameters for
+    this in config.h As shipped, if someone does a link look four times
+    and the last time they do the links is within 35 seconds of the
+    penultimate link look, they get killed.
+    If you do 3 links and then don't do any for at least 35 seconds
+    all memory of you doing a links is forgotten.
+    (amm wanted this one. so. he has it) 
+
+24) autopilot command. you can now turn on AUTO_KLINE/AUTO modes
+    from the dcc chat to the tcm. As you join the tcm party line,
+    the current state of the autopilot flag is announced.
+
+  - Dianora, Tue Dec 31 20:29:09 EST 1996
+    db@@diana.intacc.net
+
+v0.3.6 
+
+  This release is primarily a bug fix/stabilize things 
+
+25) AUTO link look kill was broken on +th servers. To my horror, I 
+    discovered +th servers add a '' bit at the beginning of the LINKS
+    notice to include the possible server option. This has been taken
+    account of here.
+
+26) userlist.c *sigh* I forgot to change the #ifdef's to account
+    for AUTO kill features but NO AUTO KLINE
+    This means, the hostlist wasn't loaded. AUTO kill features check
+    the hostlist as well.
+
+27) I've put in some extra code in do_stats_o() to ensure that
+    lame O lines aren't used. I have seen "*.*" as an O-line... that
+    means ANY user that connects to tcm is seen as an oper. not good.
+    Yes. I am going to do a /whois next version to ensure clients
+    that connect ARE opers...
+
+28) removed a tiny bit of code that was being called at startup
+    to look for command line give bot nick, channel etc. No point now
+    with tcm.cf
+
+29) folded in Toast's changes this adds kclone, kbot and fixes the
+    dumb mistake _I_ made. The original idea for remote kline came
+    from mbundy I believe...
+
+30) Some contributed ircii scripts are included in this distribution.
+    Look in the subdir "scripts"
+
+    Da5id's noclone script is included, it interfaces with the
+    output of tcm and saves some typing. Look in the subdir
+    noclone.. Thanks Da5id
+
+    A script someone (larz?) gave me from primenet is also included
+    it allows one oper to remote kline etc. from one client.
+    look in the subdir primenet.
+
+31) I got sick and tired of accidentally k-lining people, so
+    I have changed all commands to require a '.' command character.
+    You can pretend you are on an eggdrop bot now. (The commands
+    are not the same though. but you can pretend)
+
+32) A message of the day function has been added, due to a request
+    from the primenet team. (Larz) Anyway. 
+    it was simple to add. I might get around to putting time
+    stamping on it, so its not seen every single time, but
+    not today.
+
+33) working with EA I found where the core dump problem was with linux
+    and netbsd... zaph then sent me a fix, I've included some of
+    his suggestions but the fix is mine.
+
+34) virtual host support. New key letter, 'V' in tcm.cf
+
+  - Dianora, Fri Mar  7 16:19:10 EST 1997
+
+N.B. the new email addresses
+
+	db@@db.net, db@@ottawa.net
+
+v0.3.7
+
+What I decided to do from now on, is use the least signicant digit
+for minor bug fix releases.. adding no new features, just fixing
+bugs... This emulates what sendmail is doing now.. So the next
+formal major release will be v0.4.0 ... about fripping time I think.
+
+bugs bugs bugs fixed
+
+35) broken 'O:' message only code, plus some fairly dead code, removed.
+
+36) non-opers could op themselves using the .op command .. tsk tsk.. 
+
+37) Missing space in the "LINKS requested by" 
+
+38) I missed one of Toasts mods.. oops. thanks Toast
+
+39) missing check for already free member in clearhash()
+
+  - Dianora, Sun Mar 23 13:40:59 EST 1997
+    db@@ottawa.net, db@@db.net
+
+v0.4.0
+
+40) Remote opers have to register now for all remote kline functions
+    I have added a new command ".register password" format of
+    userlist.load has been changed, look at userlist.load for
+    instructions.
+
+41) services is messaged for global clone reports, time interval
+    is configurable in config.h
+
+42) Rudimentary tcm linking has been added, look at userlist.load
+    and botlist.load for instructions. ".gline" command has been
+    added. Every bot list in userlist.load with "k" in privs
+    will add a kline if this message is sent while the bots are linked.
+
+43) Along with rudimentary tcm linking, there is an added prefix ':'
+    that can be used to send a command to a remotely linked tcm.
+    Read "help.linking" file
+
+44) Added .ignore tcmnick and .lignore commands to ignore spam
+    from linked tcm's, it does not affect normal chat.
+
+45) ".clear" command removed and split into ".rehash" and ".trace"
+    rehash reloads userlist/botlist, trace traces server.
+
+46) some dead code was removed from main() cleanups here and there were made
+
+47) split help file text into separate files because of heavy demand. :-)
+    read the file "help" to see how this works.
+
+  - Dianora, Fri Apr 25 16:56:00 EDT 1997
+    db@@ottawa.net, db@@db.net
+
+v0.4.1
+
+48) bug fixes. fixed name clash OPERS_ONLY (duh) in config.h/tcm.h file
+
+49) reworked bothunt.c so it will understand the trace format as used
+    on irc1.texas.net, also in the process made chopuh() a little
+    more robust
+
+  - Dianora, Sat May  3 12:27:41 EDT 1997
+    db@@ottawa.net, db@@db.net
+@
+
+
+1.3
+log
+@4.0.1 update
+@
+text
+@d231 1
+a231 1
+v0.4.0
+@
+
+
+1.2
+log
+@final release v0.4.0
+@
+text
+@d230 11
+@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@d228 1
+a228 1
+  - Dianora, Fri Apr 25 02:14:15 EST 1997
+@

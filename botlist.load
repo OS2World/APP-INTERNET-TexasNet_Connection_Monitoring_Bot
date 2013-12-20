@@ -1,0 +1,7 @@
+# each entry here consists of a colon separated line
+#
+# hostname where remote tcm is running
+# default nickname of remote tcm
+# password and port
+#
+heceta.tfm.com:mobot:nottherealpassword:6800

@@ -1,0 +1,114 @@
+# noclone.irc by Da5id (da5id@eof.net)
+# 02-18-97
+#
+# *LarZ* I was writting the exact same thing (mjr@charred.Blackened.com)
+
+echo *** noclone.irc by Da5id has been loaded
+echo *** clone management routines loaded -- lusers beware.
+echo *** /chelp for help.
+alias chelp {
+echo     -------------------------\(noclone.irc help\)---------------------------
+echo *** /tcmnick <tcm_nickname> .. Sets the TCM Nickname for use in /doit and
+echo ***                            /cfp aliases.
+echo *** /doit .................... Executes /quote kline string as parsed by
+echo ***                            your TCM bot (requires /tcmnick to be set).
+echo *** /cfp <ON/OFF> ............ Toggles ConnectFlood Protection as determined
+echo ***                            by the TCM bot (also requires /tcmnick).
+echo *** /servset ................. Sets up routines which will automatically
+echo ***                            /kill any clone on your server which is 
+echo ***                            reported by /clones. also performs /trace to
+echo ***                            protect operators who have multiple con-
+echo ***                            nections to irc (hi habit and temp :).
+echo *** /clones <number> ......... Checks services.us for clones with minimum-
+echo ***                            number of clones determined by <number>.
+echo ***                            if you've done /servset, you will autokill
+echo ***                            any clones on your server, excluding other
+echo ***                            operators.
+echo *** /findoper <server> ....... Returns nick[user@host] for all opers on
+echo ***                            <server>.
+}
+
+alias tcmnick {
+if ([$0]) {
+^on -dcc_chat "$0 /kline*" @kstring = [\$1-]
+@tcm = [$0]
+echo *** TCM nickname is $0.. trigger with /doit
+}{echo *** Usage: /tcmnick <tcm_nickname>}
+}
+alias doit {
+eval $kstring
+eval echo *** Now executing command: $kstring
+}
+
+alias cfp {
+	if (![$0]) {
+		echo *** Usage: /cfp [ON|OFF]
+		echo ***        Toggles Connect Flood Protection ON or OFF.
+	}
+	if ([$0]==[ON]) {
+		^eval ^on -DCC_CHAT "$tcm * is *" {
+			^kill $1 too many connections. read MOTD
+			echo *** $1 killed at $Z for connect flood.
+		}
+		echo *** Connect Flood Protection is now ON.
+	}
+	if ([$0]==[OFF]) {
+		^eval ^on DCC_CHAT -"$tcm * is *"
+		echo *** Connect Flood Protection is now OFF.
+	}
+	{}
+}
+
+alias clones ^msg x@services.us clones
+alias stripnick @ function_return = left($index([ $0) $0)
+alias trace.protect {
+	^on ^205 "*" #
+	^on ^203 "*" #
+	^on ^209 "*" #
+	^on ^206 "*" #
+	^on ^262 "*" #
+	^on ^204 "*" {
+		^eval ^on -notice "services.us *$stripnick($3)* *$S*" #
+		eval echo *** $stripnick($3) Has been protected from clonekills.
+	}
+	eval ^on -notice "services.us * *$S*" {
+		kill $1 clone -- services
+	}
+}
+^on -server_notice "* notice -- * *is now*" {
+	^eval ^on -notice "services.us *$4* *$S*" #
+	echo *** $4 Has been protected from clonekills.
+}
+
+alias servset {
+	trace.protect
+	//trace
+}
+alias trace.reset {
+	^on ^205 -"*" 
+	^on ^203 -"*" 
+	^on ^209 -"*" 
+	^on ^206 -"*" 
+	^on ^262 -"*" 
+	^on ^204 -"*" 
+}
+alias trace.oper {
+	^on ^205 "*" #
+	^on ^203 "*" #
+	^on ^209 "*" #
+	^on ^206 "*" #
+	^on ^262 "*" #
+	^on ^204 "*" {
+		eval echo *** \$3 is an Operator on $0
+	}
+}
+alias trace {
+trace.reset
+//trace $0-
+}
+alias findoper {
+	trace.oper
+	//trace $0
+}
+
+

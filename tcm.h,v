@@ -1,0 +1,319 @@
+head	1.9;
+access;
+symbols;
+locks
+	db:1.9; strict;
+comment	@ * @;
+
+
+1.9
+date	97.05.12.01.48.05;	author db;	state Exp;
+branches;
+next	1.8;
+
+1.8
+date	97.05.01.00.24.17;	author db;	state Exp;
+branches;
+next	1.7;
+
+1.7
+date	97.04.25.21.03.06;	author db;	state Exp;
+branches;
+next	1.6;
+
+1.6
+date	97.04.25.20.53.51;	author db;	state Exp;
+branches;
+next	1.5;
+
+1.5
+date	97.04.25.06.15.56;	author db;	state Exp;
+branches;
+next	1.4;
+
+1.4
+date	97.04.25.05.59.44;	author db;	state Exp;
+branches;
+next	1.3;
+
+1.3
+date	97.04.23.16.34.05;	author db;	state Exp;
+branches;
+next	1.2;
+
+1.2
+date	97.04.02.20.17.31;	author db;	state Exp;
+branches;
+next	1.1;
+
+1.1
+date	97.03.09.05.24.06;	author db;	state Exp;
+branches;
+next	;
+
+
+desc
+@clean ups
+@
+
+
+1.9
+log
+@added chris's ca services code, cleaned up moved domain define
+@
+text
+@#if defined (AUTO_KLINE) || defined (AUTO_KILL_NICK_FLOODING) ||\
+ defined (AUTO_KILL_LINK_LOOKERS)
+#define AUTOPILOT
+#endif
+
+#define VERSION1 "TexasNet Connection Monitor Service by Hendrix [jimi@@texas.net]"
+#define VERSION2 "tcm-dianora-v0.4.2 ALPHA-1 db@@db.net,db@@ottawa.net"
+#define VERSION3 "auto-kline by Phisher dkemp@@frontiernet.net"
+
+/* Buffer sizes */
+
+/* Size of read buffer on DCC or server connections */
+#define BUFFERSIZE     1024
+
+/* scratch buffer size */
+#define MAX_BUFF       512
+
+/* small scratch buffer size */
+#define SMALL_BUFF	16
+
+#define DCCBUFF_SIZE   150
+#define NOTICE_SIZE    150
+
+/* config sizes */
+#define MAX_NICK	10	/* - Dianora */
+
+#define MAX_CONFIG	80	/* - Dianora */
+#define MAX_CHANNEL	80	/* - Dianora */
+
+#define MAX_HOST	80	/* - Dianora */
+#define MAX_DOMAIN	80	/* - Dianora */
+
+/* Macros for universal OS handling of signal vectors */
+#define sysvhold notice
+
+/* Why aren't these predefined?!?!?!? */
+#define max(a,b) (((a) > (b)) ? (a) : (b))
+#define min(a,b) (((a) < (b)) ? (a) : (b))
+
+#define INVALID (-1)
+
+#define YES 1
+#define NO 0
+
+/*
+This structure defines who is connected to this tcm.
+*/
+
+typedef struct connection {
+  char *buffer;
+  char *buffend;
+  int  socket;
+  char type;		/* type or privs this user has */
+  char userhost[MAX_HOST];
+  char nick[MAX_NICK+2];	/* allow + 2 for incoming bot names */
+  time_t last_message_time;
+  }CONNECTION;
+
+/*
+   authentication structure set up in userlist.c
+   used for .register command
+*/
+
+typedef struct 
+{
+  char *userathost;
+  char *usernick;
+  char *password;
+  int  type;
+}AUTH_FILE_ENTRY;
+
+/*
+
+*/
+
+typedef struct 
+{
+  char *userathost;
+  char *theirnick;
+  char *password;
+  int  port;
+}BOT_FILE_ENTRY;
+
+/*
+  services struct
+  Used to store info about global clones derived from services.us
+*/
+
+typedef struct
+{
+  time_t last_checked_time;
+  char   cloning_host[MAX_HOST];
+  char   user_count[SMALL_BUFF];
+  int    kline_suggested;
+}SERVICES_ENTRY;
+
+
+
+#define TYPE_OPER		0x01	/* user has .bots privs etc. */
+#define TYPE_REGISTERED		0x02	/* user has .kline privs etc. */
+#define TYPE_GLINE		0x04	/* user has .gline privs */ 
+#define TYPE_BOT		0x08
+
+/* Not a type really, just a state.. I couldn't see wasting
+   another entire byte for it 
+*/
+#define TYPE_PENDING		0x10
+
+/* types for sendtoalldcc */
+
+#define SEND_ALL_USERS	0
+#define SEND_OPERS_ONLY	1
+/* changed my mind, for reasons detailed in serverif.c */
+/* #define BOTS_ONLY	2 */
+
+/* Time out for no response from the server 
+   5 minutes should be plenty to receive a PING from the server
+*/
+#define SERVER_TIME_OUT 300
+
+/*
+ * global variable to keep track if we are an oper yet
+ */
+unsigned	amianoper;
+
+
+@
+
+
+1.8
+log
+@few bug fixes...
+@
+text
+@d7 1
+a7 1
+#define VERSION2 "tcm-dianora-v0.4.1 db@@db.net,db@@ottawa.net"
+@
+
+
+1.7
+log
+@final release
+@
+text
+@d7 1
+a7 1
+#define VERSION2 "tcm-dianora-v0.4.0 db@@db.net,db@@ottawa.net"
+d111 2
+a112 2
+#define ALL_USERS	0
+#define OPERS_ONLY	1
+@
+
+
+1.6
+log
+@final v0.4.0
+release
+@
+text
+@d7 1
+a7 1
+#define VERSION2 "tcm-dianora-v0.4.0-alpha-5 db@@db.net,db@@ottawa.net NO YOU CAN'T QUITE HAVE IT YET RSN!!"
+@
+
+
+1.5
+log
+@checkpoint
+@
+text
+@d7 1
+a7 1
+#define VERSION2 "tcm-dianora-v0.4.0 db@@db.net,db@@ottawa.net"
+d12 2
+a13 2
+/* *sigh* large one used in stdcmds.c */
+#define LARGE_BUFF	1024
+d115 5
+@
+
+
+1.4
+log
+@checkpoint
+@
+text
+@a5 2
+#define DEBUGV4
+
+d7 1
+a7 1
+#define VERSION2 "tcm-dianora-v0.4.0-alpha-4 db@@db.net,db@@ottawa.net ***NO, YOU CAN'T HAVE IT YET***"
+d14 1
+d17 1
+@
+
+
+1.3
+log
+@added .ignore and .lignore
+@
+text
+@d9 1
+a9 1
+#define VERSION2 "tcm-dianora-v0.4.0-alpha-3 db@@db.net,db@@ottawa.net ***NO, YOU CAN'T HAVE IT YET***"
+d14 2
+@
+
+
+1.2
+log
+@checkpoint, tons of change remote bot linking etc.
+@
+text
+@d9 1
+a9 1
+#define VERSION2 "tcm-dianora-v0.4.0-test db@@db.net,db@@ottawa.net ***NO, YOU CAN'T HAVE IT YET***"
+d20 1
+d70 17
+d96 9
+a104 3
+#define TYPE_OPER		0x01
+#define TYPE_REGISTERED		0x02
+#define TYPE_BOT		0x04
+d107 7
+d118 2
+@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@d6 2
+d9 1
+a9 1
+#define VERSION2 "tcm-dianora-v0.3.6 (alpha-4) db@@db.net,db@@ottawa.net"
+d12 2
+d16 2
+d19 3
+d46 1
+a46 1
+struct connection {
+d50 10
+a59 5
+  char oper;
+  char linked_bot;
+  char userhost[80];
+  char nick[MAX_NICK];
+  };
+d61 26
+@

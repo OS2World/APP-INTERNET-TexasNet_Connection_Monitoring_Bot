@@ -1,0 +1,20 @@
+ - .autopilot [ON]|[OFF]
+    AUTO_KLINE/AUTO_KILL_NICK_FLOODING/AUTO_KILL_LINK_LOOKERS modes
+    can be turned on or off with this ( OPERS only)
+    current state can be examined with just autopilot
+ - .bots,multi
+    Report any userhost with multiple connections on this server.
+ - .clones
+    This command lists any clonebots currently detected.
+ - .list <wildcarded userhost>  ( OPERS ONLY)
+    List all connected users who match the given userhost (which
+    may contain wildcards). 
+ - .nfind <wildcarded nick> ( OPERS ONLY)
+    List all nicks which match the given wildcarded nick
+ - .failures
+    This command lists userhosts that have exceeded the threshhold
+    of connect failures due to being K-lined, detected as a bot,
+ - .domains [min connections] ( OPERS ONLY)
+    List all connections to  by domain, showing those
+    domains with more than [min connections] users.
+

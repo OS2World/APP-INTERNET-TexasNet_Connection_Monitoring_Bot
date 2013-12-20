@@ -1,0 +1,19 @@
+### a very simple alias that sets an on dcc_chat command to parse any
+### incoming /quote kline instructions from a TCM bot.
+### it only requires that you have /set novice off
+### by Da5id 1/97 da5id@eof.net
+
+alias tcmnick {
+if ([$0]) {
+^on -dcc_chat "$0 /quote kline*" @kstring = [\$1-]
+echo *** TCM nickname is $0.. trigger with /doit
+}{echo *** Usage: /tcmnick <tcm_nickname>}
+}
+alias doit {
+eval $kstring
+eval echo *** Now executing command: $kstring
+}
+echo *** Loading tcm.irc by Da5id
+echo *** tcm aliases now loaded...
+echo *** to activate, type /tcm <tcm_nickname>
+

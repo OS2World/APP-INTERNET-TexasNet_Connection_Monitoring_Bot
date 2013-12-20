@@ -1,0 +1,213 @@
+head	1.4;
+access;
+symbols;
+locks; strict;
+comment	@ * @;
+
+
+1.4
+date	97.04.25.20.53.13;	author db;	state Exp;
+branches;
+next	1.3;
+
+1.3
+date	97.04.25.05.59.12;	author db;	state Exp;
+branches;
+next	1.2;
+
+1.2
+date	97.01.01.02.43.16;	author db;	state Exp;
+branches;
+next	1.1;
+
+1.1
+date	96.12.09.00.35.54;	author db;	state Exp;
+branches;
+next	;
+
+
+desc
+@stdcmds as used in tcm-dianora
+@
+
+
+1.4
+log
+@standardized on BUFFERSIZE in tcm.h
+@
+text
+@/************************************************************
+* MrsBot by Hendrix <jimi@@texas.net>                        *
+* stdcmds.c                                                 *
+*   Simple interfaces to send out most types of IRC messages*
+*   Contains interface to msg an entire file to a user      *
+* Includes routines:                                        *
+*   void toserv                                             *
+*   void op                                                 *
+*   void kick                                               *
+*   void who                                                *
+*   void whois                                              *
+*   void names                                              *
+*   void join                                               *
+*   void leave                                              *
+*   void notice                                             *
+*   void msg                                                *
+*   void say                                                *
+*   void action                                             *
+*   void newnick                                            *
+*   void invite                                             *
+*   void get_userhost                                       *
+*   void msg                                                *
+************************************************************/
+
+#include <stdio.h>
+#include <sys/types.h>
+#include "tcm.h"
+#include "config.h"
+
+static char *version="$Id: stdcmds.c,v 1.3 1997/04/25 05:59:12 db Exp db $";
+
+char buff[BUFFERSIZE];           /* Used to hold msgs to server */
+
+extern FILE *outfile;      /* Debug output file handle */
+
+/* The following are primitives that send messages to the server to perform
+   certain things.  The names are quite self explanatory, so I am not going
+   to document each.  By no means are they complex. */
+void op(chan,nick)
+char *chan,*nick;
+{
+  sprintf(buff,"MODE %s +oooo %s\n", chan, nick);
+  toserv(buff);
+}
+
+void kick(chan,nick,comment)
+char *chan,*nick,*comment;
+{
+  sprintf(buff,"KICK %s %s :%s\n", chan, nick, comment);
+  toserv(buff);
+}
+
+void who(nick)
+char *nick;
+{
+  sprintf(buff,"WHO %s\n", nick);
+  toserv(buff);
+}
+
+void whois(nick)
+char *nick;
+{
+  sprintf(buff,"WHOIS %s\n", nick);
+  toserv(buff);
+}
+
+void names(chan)
+char *chan;
+{
+  sprintf(buff,"NAMES %s\n", chan);
+  toserv(buff);
+}
+
+void join(chan)
+char *chan;
+{
+  sprintf(buff,"JOIN %s\n", chan);
+  toserv(buff);
+}
+
+void leave(chan)
+char *chan;
+{
+  sprintf(buff,"PART %s\n", chan);
+  toserv(buff);
+}
+
+void notice(nick,msg)
+char *nick, *msg;
+{
+  sprintf(buff,"NOTICE %s :%s\n", nick, msg);
+  toserv(buff);
+}
+
+void msg(nick,msg)
+char *nick, *msg;
+{
+  sprintf(buff,"PRIVMSG %s :%s\n", nick, msg);
+  toserv(buff);
+}
+
+void say(chan,msg)
+char *chan,*msg;
+{
+  sprintf(buff,"PRIVMSG %s :%s\n", chan, msg);
+  toserv(buff);
+}
+
+void action(chan,msg)
+char *chan,*msg;
+{
+  sprintf(buff,"PRIVMSG %s :\001ACTION %s\001\n", chan, msg);
+  toserv(buff);
+}
+
+void newnick(nick)
+char *nick;
+{
+  sprintf(buff,"NICK %s\n", nick);
+  toserv(buff);
+}
+
+void invite(nick,chan)
+char *nick,*chan;
+{
+  sprintf(buff,"INVITE %s %s\n", nick, chan);
+  toserv(buff);
+}
+@
+
+
+1.3
+log
+@added #defines
+@
+text
+@d30 1
+a30 1
+static char *version="$Id: stdcmds.c,v 1.2 1997/01/01 02:43:16 db Exp db $";
+d32 1
+a32 1
+char buff[LARGE_BUFF];           /* Used to hold msgs to server */
+@
+
+
+1.2
+log
+@for op command, had to modify op()
+@
+text
+@d22 1
+a22 1
+*   void babymsg                                            *
+d26 2
+d30 1
+a30 1
+static char *version="$Id: stdcmds.c,v 1.1 1996/12/09 00:35:54 db Exp db $";
+d32 1
+a32 1
+char buff[1000];           /* Used to hold msgs to server */
+@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@d28 1
+a28 1
+static char *version="$Id$";
+d40 1
+a40 1
+  sprintf(buff,"MODE %s +o %s\n", chan, nick);
+@

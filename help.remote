@@ -1,0 +1,16 @@
+REMOTE_KLINE commands (only valid if REMOTE_KLINE is defined
+and you are a  oper) AND you are REGISTERED with .register
+
+ - .register password
+    registers a remote oper for REMOTE_KLINE/KILL etc.
+ - .killlist user@host
+    The bot will kill each user@host found with the reason
+    "no multiple connections read the motd" ( OPERS only)
+ - .kclone pattern
+    The bot will add a k-line for pattern for cloning
+ - .kbot pattern
+    The bot will add a k-line for pattern for running bots
+ - .kline pattern reason
+    The bot will add a k-line for pattern with reason
+ - .kflood pattern reason
+    The bot will add a k-line for pattern for flooding

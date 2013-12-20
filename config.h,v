@@ -1,0 +1,537 @@
+head	1.11;
+access;
+symbols;
+locks
+	db:1.11; strict;
+comment	@ * @;
+
+
+1.11
+date	97.05.21.04.38.44;	author db;	state Exp;
+branches;
+next	1.10;
+
+1.10
+date	97.04.25.20.54.07;	author db;	state Exp;
+branches;
+next	1.9;
+
+1.9
+date	97.04.17.19.05.49;	author db;	state Exp;
+branches;
+next	1.8;
+
+1.8
+date	97.03.23.18.45.13;	author db;	state Exp;
+branches;
+next	1.7;
+
+1.7
+date	97.01.01.02.43.46;	author db;	state Exp;
+branches;
+next	1.6;
+
+1.6
+date	97.01.01.01.43.23;	author db;	state Exp;
+branches;
+next	1.5;
+
+1.5
+date	96.12.19.04.22.34;	author db;	state Exp;
+branches;
+next	1.4;
+
+1.4
+date	96.12.18.02.52.35;	author db;	state Exp;
+branches;
+next	1.3;
+
+1.3
+date	96.12.18.01.55.07;	author db;	state Exp;
+branches;
+next	1.2;
+
+1.2
+date	96.12.16.01.31.21;	author db;	state Exp;
+branches;
+next	1.1;
+
+1.1
+date	96.12.15.20.56.01;	author db;	state Exp;
+branches;
+next	;
+
+
+desc
+@config.h file for tcm-dianora
+@
+
+
+1.11
+log
+@checkpoint
+@
+text
+@/************************************************************
+* MrsBot by Hendrix <jimi@@texas.net>                        *
+* config.h                                                  *
+*   Global definitions obtained by including this file.     *
+************************************************************/
+/*
+   define this if you don't like a local echo back from /dcc chat
+*/
+/* #define NO_LOCAL_ECHO */
+
+/*
+   define this if you are a LEAF 
+   Just gives a message telling stats h's you aren't a hub :-)
+*/
+#define NOT_A_HUB
+
+/*
+  define this is you aren't running a +th server and you want 
+  pseudo stats p
+*/
+#define NOT_TH
+
+/* The default tcm config file , can be overridden with a file name
+   argument to tcm
+*/
+
+#define CONFIG_FILE "tcm.cf"
+
+#define USERLIST_FILE "userlist.load"
+#define BOTLIST_FILE  "botlist.load"
+
+#define HELP_FILE "help"
+#define MOTD_FILE "motd.txt"
+
+/* Only needed for BSDI */
+#define DOMAIN "mo.net"
+
+#define LOGFILE "clone_log"
+#define LAST_LOG_NAME "last_clone_log_name"
+
+#define DEBUG_LOGFILE "tcm.log"
+
+/* How to email, sendmail would work too */
+/* This is obviously a SUNos ism */
+
+#define HOW_TO_MAIL "/usr/ucb/mail -s"
+
+/* For linux this is suggested by zaph */
+/* #define HOW_TO_MAIL "/bin/mail -s" */
+
+/* Uncomment this if you want only your opers to connect to tcm */
+/* #define OPERS_ONLY */
+
+/* Uncomment this if you are brave, and want to try Phishers
+   (dkemp@@frontiernet.net) auto kline code 
+*/
+#define AUTO_KLINE
+
+/* If you use AUTO_KLINE I STRONGLY suggest you define
+   NO_STUPID_KLINES, this will prevent tcm from AUTO_KLINING
+   *@@*some.host
+*/
+#define NO_STUPID_KLINES
+
+/* Uncomment this if you don't want hosts listed in
+   hostlist.load to trigger a warning at all about cloners etc.
+   (requested by Temp)
+*/
+#undef DONT_WARN_OUR_CLONES
+
+/* Uncomment this if you wish to auto kill users who nick flood
+   This can be defined without AUTO_KLINE, and tcm will auto kill
+   nick flooders, and not do anything about cloners except report them.
+*/
+#define AUTO_KILL_NICK_FLOODING
+
+/* undef if you don't want klines reported - Toast */
+#define REPORT_KLINES
+
+/*
+   Uncomment this if you wish tcm to auto kill link lookers
+*/
+#define AUTO_KILL_LINK_LOOKERS
+
+/* Uncomment this if you trust remotely connected opers to
+   do klines on your tcm
+
+   IF you define this, NONE of the remote .kline .kill .kbot .kclone
+   commands will work until they have .registered, you MUST have
+   a valid user@@host:-DCC-:password:ok userlist.load file in the
+   current working directory of tcm. I am absolutely concerned that
+   a user might discover how to match an oper user@@host and go
+   on a kline kill spree... - Dianora
+*/
+#define REMOTE_KLINE
+
+/*
+  I STRONGLY recommend using PARANOID_PRIVS
+  This will disallow even opers who have connected from
+  channel the .op, .killlist, .cycle commands until they have .registered
+*/
+#define PARANOID_PRIVS
+
+/* Define AUTOPILOT_DEFAULT to YES if you want it ON when
+   tcm starts up, define to to NO if you want it OFF when
+   tcm starts up.
+   */
+
+#define AUTOPILOT_DEFAULT YES
+/* #define AUTOPILOT_DEFAULT NO */
+
+/* Uncomment this and recompile to get a debug log file */
+#undef  DEBUGMODE
+
+/* Maximum number of reconnections to a server allowed before quitting. */
+#define MAXRECONNECTS 5
+
+/* Maximum users allowed in MrsBot's userlist */
+#define MAXUSERS 100
+
+/* Maximum linked bots allowed in MrsBot's botlist */
+#define MAXBOTS 20
+
+/* maximum number of hosts not to auto kline */
+#define MAXHOSTS 100
+
+/* whom to message for a global clone report */
+/* in the U.S. services */
+#define SERVICES_NICK "services"
+
+/* name to expect services reply from */
+#define SERVICES_NAME "services.us"
+
+/* name of canadian services server */
+#define CA_SERVICES_NAME "services.ca"
+
+/* how many clones to look for globally */
+#define SERVICES_CLONE_THRESHOLD 4
+
+/* how often to check for global clones */
+#define SERVICES_CHECK_TIME 60
+
+/* Maximum DCC chat connections */
+#define MAXDCCCONNS 20
+
+/*
+   You can leave these, or change them to suit... - Dianora
+
+   NICK_CHANGE_T1_TIME is the time in seconds, each nick that has
+   changed, will get decremented its nick change count, if the user
+   stops changing their nick.
+
+   NICK_CHANGE_T2_TIME is how long in seconds, a nick will "live" until its
+   purged from the nick change table. Note, that it should be expired
+   by the NICK_CHANGE_T1_TIME eventually, but if a nick manages to make
+   a horrendous number of nick changes in a short time before being killed
+   or k-lined, this will ensure it gets purged within a reasonable length
+   of time (set to 5 minutes here)
+
+   NICK_CHANGE_MAX_COUNT is the number of nick changes in a row allowed
+   without NICK_CHANGE_T1_TIME before a nick flood is reported.
+
+   - Dianora
+*/
+
+#define NICK_CHANGE_T1_TIME  10
+#define NICK_CHANGE_T2_TIME 300
+#define NICK_CHANGE_MAX_COUNT 5
+
+/* 
+   change if you wish - Dianora
+
+   Link looker parameters
+
+   Allow a user MAX_LINK_LOOKS (4) link looks within 
+   MAX_LINK_TIME (35) seconds
+
+*/
+#define MAX_LINK_LOOKS 4
+#define MAX_LINK_TIME 35
+
+/* used in domain report
+   paragod reports 1000 for this is too small on his servers
+*/
+
+#define MAXDOMAINS     2000
+
+/* What you've all been waiting for */
+/* remote tcm linking options */
+
+/* For this version, I'm going to hard code the input port here */
+#define TCM_PORT 6800
+
+/* How long to let a remote tcm attempt to connect, in seconds */
+#define TCM_REMOTE_TIMEOUT 30
+
+/* allow table size */
+/* This table is used to .allow certain bot nicks
+   i.e. see the "spam" from those bots
+*/
+#define MAX_ALLOW_SIZE 20
+
+@
+
+
+1.10
+log
+@removed BUFFERSIZE define, that belongs in tcm.h, added missing
+NO_LOCAL_ECHO
+@
+text
+@d134 3
+d182 5
+d197 6
+a202 3
+/* ignore table size */
+/* This table is used to .ignore certain bot nicks */
+#define MAX_IGNORE_SIZE 20
+@
+
+
+1.9
+log
+@checkpoint, added TH etc.
+@
+text
+@d7 5
+d13 1
+d32 1
+a32 1
+#define HELP_FILE "help.txt"
+d66 1
+a66 1
+   hostlist.load to trigure a warning at all about cloners etc.
+a142 3
+/* Size of read buffer on DCC or server connections */
+#define BUFFERSIZE 1024
+
+d188 4
+@
+
+
+1.8
+log
+@config option for AUTOPILOT default YES/NO
+@
+text
+@d6 10
+d23 3
+d53 12
+d81 7
+d89 1
+d91 6
+a96 1
+#define REMOTE_KLINE
+d121 12
+a132 2
+/* undef this if you think killlist is ok even if global oper */
+#define ISLOCALOPER 
+d176 9
+@
+
+
+1.7
+log
+@*** empty log message ***
+@
+text
+@d7 4
+d13 3
+d22 2
+d25 2
+d29 3
+d46 3
+d60 8
+d77 3
+a79 1
+#ifdef AUTO_KLINE
+a81 1
+#endif
+a91 9
+
+/* Similar to the above, MrsBot will detect attempts to flood it by ignoring
+   consecutive unknown commands that come from the same host.  This can cause
+   users to not get error messages in certain cases, and has a TINY impact on
+   bot performance.  If this is undesirable, comment out this next #define.
+*/
+
+#define DETECT_TSUNAMI_FLOOD
+
+a126 94
+
+
+/************ NOTHING BELOW HERE IS USER CONFIGURABLE ************/
+
+#if defined (AUTO_KLINE) || defined (AUTO_KILL_NICK_FLOODING) ||\
+ defined (AUTO_KILL_LINK_LOOKERS)
+#define AUTOPILOT
+#endif
+
+#define VERSION1 "TexasNet Connection Monitor Service by Hendrix [jimi@@texas.net]"
+#define VERSION2 "tcm-dianora-v0.3.5 db@@diana.intacc.net"
+#define VERSION3 "auto-kline by Phisher dkemp@@frontiernet.net"
+
+/* scratch buffer size */
+#define MAX_BUFF       512
+
+#define MAX_NICK	10	/* - Dianora */
+
+#define MAX_CONFIG	80	/* - Dianora */
+#define MAX_CHANNEL	80	/* - Dianora */
+
+/* Access levels for MrsBot's reactions to bans. Kinda a level of protection */
+#define REMOVEONLY 777
+#define REMOVENKICK 888
+#define REMOVEKICKNBAN 999
+
+/* Definitions for variable "whatneeded" from beatban.c */
+#define CAN_JOIN -1
+#define WANT_UNBAN 0
+#define WANT_INVITE 1
+#define WRONG_KEY 2
+
+/* Actions to be performed by onuserhost().  The USERHOST server message is
+   used anytime we need to get the userhost for a given nickname.  These are
+   the situations where we need this.  This way, when the userhost reply
+   message comes back to MrsBot, she'll remember why she sent it! */
+#define NORMALBAN 0
+#define ADIOS 1
+#define MEGABAN 2
+#define UNBAN 3
+#define PROTECT 4
+#define UNPROTECT 5
+#define SETUSER 6
+#define SHOWACCESS 7
+
+/* Classes of kick comments used in randcomment() */
+#define KC_AUTOKICK 0
+#define KC_PROTECTED 1
+#define KC_MASSDEOP 2
+#define KC_REVENGE 3
+#define KC_WHENSAID 4
+#define KC_REQUESTED 5
+
+/* Special codes used during unbans */
+#define NORMAL_UNBAN 1
+#define LITERAL_MATCH 2
+#define INVITE_AFTER 3
+
+/* Definition for a record in the list of userhosts that MrsBot
+   recognizes.  Access levels range from -222 to 999 (the higher
+   the better) and are used in joinkick.c, onmode.c, onmsg.c, and
+   public.c */
+struct userlist_rec {
+  char *userhost_mask;
+  int access_lev;
+  char protected;
+  char *ak_text;
+};
+
+/* Macros for universal OS handling of signal vectors */
+#define sysvhold notice
+
+/* Definition for information saved from a request that causes MrsBot
+   to request a userhost.  Contains nick and userhost of user making
+   the request, the nickname we are getting userhost on, the action to
+   perform once we GET the userhost, and an additional info field that
+   is currently only used with ADIOS and SETUSER. */
+struct requestinfo {
+  char req_nick[MAX_NICK];
+  char req_userhost[80];
+  char targetnick[MAX_NICK];
+  char uhostaction;
+  int extrainfo;
+  struct chaninfo *targetchan;
+  };
+
+/* Why aren't these predefined?!?!?!? */
+#define max(a,b) (((a) > (b)) ? (a) : (b))
+#define min(a,b) (((a) < (b)) ? (a) : (b))
+
+#define INVALID (-1)
+
+#define YES 1
+#define NO 0
+@
+
+
+1.6
+log
+@auto code added, moved around and added defs for all
+@
+text
+@d120 1
+a120 1
+#define VERSION2 "tcm-dianora-v0.3.5 (beta) db@@diana.intacc.net"
+@
+
+
+1.5
+log
+@updated VERSION
+@
+text
+@d26 17
+d70 3
+a72 1
+   bot performance.  If this is undesirable, comment out this next #define. */
+d75 37
+d114 5
+d120 1
+a120 1
+#define VERSION2 "tcm-dianora-v0.3.4 db@@diana.intacc.net"
+a199 5
+
+
+#define NICK_CHANGE_T1_TIME  10
+#define NICK_CHANGE_T2_TIME 300
+#define NICK_CHANGE_MAX_COUNT 5
+@
+
+
+1.4
+log
+@email etc.
+@
+text
+@d59 1
+a59 1
+#define VERSION2 "tcm-dianora-v0.3.3 db@@diana.intacc.net"
+@
+
+
+1.3
+log
+@added VERSION1 VERSION2 VERSION3
+@
+text
+@d13 4
+@
+
+
+1.2
+log
+@AUTO_KLINE added
+@
+text
+@d20 1
+a20 1
+/* #define AUTO_KLINE */
+d36 3
+d53 4
+@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@d17 5
+d30 5
+@

@@ -1,0 +1,48 @@
+head	1.1;
+access;
+symbols;
+locks
+	db:1.1; strict;
+comment	@ * @;
+
+
+1.1
+date	97.06.01.18.04.56;	author db;	state Exp;
+branches;
+next	;
+
+
+desc
+@version for NEXT
+@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@/* strdup, hacked by gustaf neumann, Oct 90 */
+
+#include <strings.h>
+#include <stdio.h>
+
+extern char * malloc();
+
+char * 
+strdup ( string ) 
+char * string;
+{
+char *newstring;
+unsigned size;
+
+	if (string == (char *)NULL)	/* If the original is NULL	*/
+		return (char *)NULL;	/* so is the result.		*/
+
+	size = (unsigned)strlen(string)+1;
+	if ( (newstring = malloc((strlen(string)+1) * sizeof(char))) )
+		strcpy(newstring,string);
+
+	return newstring;
+}
+@

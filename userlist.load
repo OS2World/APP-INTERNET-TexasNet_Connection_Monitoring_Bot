@@ -1,0 +1,27 @@
+#
+# userlist.load format
+# each line is colon separated
+# user@host for opers; hostname mask for remote tcm's
+# Name of remote tcm or "-DCC-" for opers, This field is actually
+# just ignored for /dcc connects so "-DCC-" is a place holder
+# password
+# privs - privs are o for oper, k for remote Kline (i.e. registered)
+# b for remote tcm, g for gline privilege for a user
+# if a remote tcm is missing a 'k' then gline requests will not
+# be honoured from that tcm.
+#
+# Remember, remote opers will not be able to remote kline etc.
+# until they ".register password" with the password as given here.
+#
+# allow mobot to connect to us as a remote link bot
+# allow it oper and kline privs.
+#
+*.bsd.org:MoBot:notrealpassword:okb
+#
+# db@*ottawa.net has oper remote kline and gline privs
+#
+db@*.ottawa.net:-DCC-:notrealpassword:okg
+#
+# db@*bsd.org has oper and remote kline but no gline privs
+#
+db@*bsd.org:-DCC-:notrealpassword:ok
